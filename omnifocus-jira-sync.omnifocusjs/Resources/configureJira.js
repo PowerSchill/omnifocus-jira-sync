@@ -66,14 +66,14 @@
         throw new Error('All fields are required. Please fill in all configuration values.');
       }
 
-      // Validate Jira URL format
-      if (!jiraUrl.startsWith('https://')) {
-        throw new Error('Jira URL must start with https:// for security.\n\nExample: https://yourcompany.atlassian.net');
-      }
-
-      // Validate URL format using URL constructor
+      // Validate Jira URL format and enforce HTTPS using URL constructor
       try {
         const url = new URL(jiraUrl);
+
+        // Enforce HTTPS protocol (URL protocol is normalized to lowercase)
+        if (url.protocol !== 'https:') {
+          throw new Error('Jira URL must start with https:// for security.\n\nExample: https://yourcompany.atlassian.net');
+        }
         // Check that it's a valid domain (has at least one dot)
         if (!url.hostname.includes('.')) {
           throw new Error('Jira URL must be a valid domain.\n\nExample: https://yourcompany.atlassian.net');
@@ -87,7 +87,7 @@
 
       // Validate tag name format (basic check)
       if (tagName.includes('/') || tagName.includes('\\')) {
-        throw new Error('Tag name cannot contain forward slashes (/) or backslashes (\\).\n\nUse colons to create nested tags (e.g., "Work:JIRA").');
+        throw new Error('Tag name cannot contain forward slashes (/) or backslashes (\\\\).\n\nUse colons to create nested tags (e.g., "Work:JIRA").');
       }
 
       // Normalize URL (remove trailing slash)
