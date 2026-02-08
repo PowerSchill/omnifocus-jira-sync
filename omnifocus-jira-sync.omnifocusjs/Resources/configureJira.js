@@ -54,33 +54,63 @@
 
       const formObject = await form.show(formPrompt, buttonTitle);
 
+      // Trim whitespace from all inputs
+      const jiraUrl = (formObject.values.jiraUrl || '').trim();
+      const accountId = (formObject.values.accountId || '').trim();
+      const apiToken = (formObject.values.apiToken || '').trim();
+      const jqlQuery = (formObject.values.jqlQuery || '').trim();
+      const tagName = (formObject.values.tagName || '').trim();
+
       // Validate required fields
-      if (!formObject.values.jiraUrl || !formObject.values.accountId ||
-          !formObject.values.apiToken || !formObject.values.jqlQuery ||
-          !formObject.values.tagName) {
+      if (!jiraUrl || !accountId || !apiToken || !jqlQuery || !tagName) {
         throw new Error('All fields are required. Please fill in all configuration values.');
       }
+
+      // Validate Jira URL format
+      if (!jiraUrl.startsWith('https://')) {
+        throw new Error('Jira URL must start with https:// for security.\n\nExample: https://yourcompany.atlassian.net');
+      }
+
+      // Validate URL format using URL constructor
+      try {
+        const url = new URL(jiraUrl);
+        // Check that it's a valid domain (has at least one dot)
+        if (!url.hostname.includes('.')) {
+          throw new Error('Jira URL must be a valid domain.\n\nExample: https://yourcompany.atlassian.net');
+        }
+      } catch (e) {
+        if (e.message.includes('Jira URL must')) {
+          throw e;
+        }
+        throw new Error('Invalid Jira URL format. Please enter a valid URL.\n\nExample: https://yourcompany.atlassian.net');
+      }
+
+      // Validate tag name format (basic check)
+      if (tagName.includes('/') || tagName.includes('\\')) {
+        throw new Error('Tag name cannot contain forward slashes (/) or backslashes (\\).\n\nUse colons to create nested tags (e.g., "Work:JIRA").');
+      }
+
+      // Normalize URL (remove trailing slash)
+      const normalizedUrl = jiraUrl.replace(/\/$/, '');
 
       // Test connection before saving
       console.log('Testing Jira connection...');
       const testResult = await lib.testConnection(
-        formObject.values.jiraUrl,
-        formObject.values.accountId,
-        formObject.values.apiToken,
-        formObject.values.jqlQuery
+        normalizedUrl,
+        accountId,
+        apiToken,
+        jqlQuery
       );
 
       console.log('Connection test successful:', JSON.stringify(testResult));
 
       // Connection successful, save credentials and settings
-      if (formObject.values.accountId && formObject.values.apiToken) {
-        lib.saveCredentials(formObject.values.accountId, formObject.values.apiToken);
-      }
+      lib.saveCredentials(accountId, apiToken);
 
       const newSettings = {
-        jiraUrl: formObject.values.jiraUrl,
-        jqlQuery: formObject.values.jqlQuery,
-        tagName: formObject.values.tagName,
+        jiraUrl: normalizedUrl,
+        jqlQuery: jqlQuery,
+        tagName: tagName,
         lastSyncTime: currentSettings.lastSyncTime || null
       };
 
