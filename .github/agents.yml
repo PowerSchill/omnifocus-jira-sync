@@ -1,0 +1,44 @@
+# Agent Configuration for Claude.ai and AI Assistants
+
+# Git Conventions
+git:
+  commit_format: conventional
+  commit_guidelines: |
+    ALWAYS use Conventional Commits syntax for git commits.
+
+    Format: <type>[optional scope]: <description>
+
+    Common types:
+    - feat: New feature
+    - fix: Bug fix
+    - docs: Documentation changes
+    - refactor: Code refactoring (no bug fix or feature)
+    - test: Adding or updating tests
+    - chore: Maintenance tasks
+    - build: Build system changes
+    - ci: CI/CD changes
+    - perf: Performance improvements
+    - style: Code style/formatting changes
+
+    Example:
+    ```
+    fix: handle pagination correctly in syncJiraFull action
+
+    The full sync was not fetching all pages of results from Jira API.
+
+    Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+    ```
+
+    Include "BREAKING CHANGE:" in the commit body when introducing breaking changes.
+
+# Code Style
+code:
+  max_line_length: 100
+  prefer_const: true
+  use_semicolons: true
+
+# Testing
+testing:
+  approach: |
+    This OmniFocus plugin does not have automated tests.
+    Manual testing is required in OmniFocus after changes.
