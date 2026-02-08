@@ -65,6 +65,11 @@
       const issueKeysFromJira = new Set(issues.map(i => i.key));
 
       for (const task of existingTasks) {
+        // Skip if not a Task object (Projects don't have taskStatus)
+        if (task.taskStatus === undefined) {
+          continue;
+        }
+
         const match = task.name.match(/^\[([^\]]+)\]/);
         if (match) {
           const taskJiraKey = match[1];

@@ -143,12 +143,11 @@
     const params = {
       jql: finalJql,
       maxResults: jiraCommon.MAX_RESULTS_PER_PAGE,
-      startAt: jiraCommon.INITIAL_START_AT,
       fields: jiraCommon.JIRA_FIELDS
     };
 
     const allIssues = [];
-    let hasMore = true;
+    let nextPageToken = null;
     const auth = jiraCommon.base64Encode(`${accountId}:${apiToken}`);
     const headers = {
       'Authorization': `Basic ${auth}`,
@@ -156,7 +155,12 @@
       'Content-Type': 'application/json'
     };
 
-    while (hasMore) {
+    do {
+      // Add nextPageToken to params if it exists
+      if (nextPageToken) {
+        params.nextPageToken = nextPageToken;
+      }
+
       const url = `${searchUrl}?${Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')}`;
       const request = URL.FetchRequest.fromString(url);
       request.method = 'GET';
@@ -172,12 +176,17 @@
       const data = JSON.parse(response.bodyString);
       allIssues.push(...data.issues);
 
-      if (data.startAt + data.maxResults < data.total) {
-        params.startAt += params.maxResults;
+      console.log(`Pagination: fetched ${data.issues.length} issues, isLast=${data.isLast}, accumulated=${allIssues.length}`);
+
+      // Token-based pagination
+      if (!data.isLast && data.nextPageToken) {
+        nextPageToken = data.nextPageToken;
+        console.log(`Fetching next page with token: ${nextPageToken.substring(0, 20)}...`);
       } else {
-        hasMore = false;
+        nextPageToken = null;
+        console.log(`Pagination complete: fetched all ${allIssues.length} issues`);
       }
-    }
+    } while (nextPageToken);
 
     return allIssues;
   };
