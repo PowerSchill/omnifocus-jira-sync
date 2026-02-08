@@ -8,6 +8,11 @@
     "mediumLabel": "Jira Sync",
     "longLabel": "Sync Jira Issues to OmniFocus",
     "defaultLocale": "en",
+    "libraries": [
+        {
+            "identifier": "jiraCommon"
+        }
+    ],
     "actions": [
         {
             "identifier": "configureJira",
