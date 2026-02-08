@@ -3,7 +3,6 @@
   const SETTINGS_KEY = 'jiraSync.settings';
   const COMPLETED_STATUSES = ['Done', 'Closed', 'Resolved'];
   const DROPPED_STATUSES = ['Withdrawn'];
-  
   // JIRA API Configuration
   const JIRA_API_VERSION = 3;
   const MAX_RESULTS_PER_PAGE = 100;
