@@ -299,18 +299,52 @@
     return text.trim();
   };
 
-  // Find task by Jira key
+  // Find task by Jira key (linear scan)
   jiraCommon.findTaskByJiraKey = (jiraKey) => {
     const prefix = `[${jiraKey}]`;
     const tasks = flattenedTasks.filter(task => task.name.startsWith(prefix));
     return tasks.length > 0 ? tasks[0] : null;
   };
 
-  // Find project by Jira key
+  // Find project by Jira key (linear scan)
   jiraCommon.findProjectByJiraKey = (jiraKey) => {
     const prefix = `[${jiraKey}]`;
     const projects = flattenedProjects.filter(project => project.name.startsWith(prefix));
     return projects.length > 0 ? projects[0] : null;
+  };
+
+  // Build a Map<string, Task> index from flattenedTasks for O(1) lookups
+  jiraCommon.buildTaskIndex = () => {
+    const index = new Map();
+    for (const task of flattenedTasks) {
+      const match = task.name.match(/^\[([^\]]+)\]/);
+      if (match) {
+        index.set(match[1], task);
+      }
+    }
+    return index;
+  };
+
+  // Build a Map<string, Project> index from flattenedProjects for O(1) lookups
+  jiraCommon.buildProjectIndex = () => {
+    const index = new Map();
+    for (const project of flattenedProjects) {
+      const match = project.name.match(/^\[([^\]]+)\]/);
+      if (match) {
+        index.set(match[1], project);
+      }
+    }
+    return index;
+  };
+
+  // Find task by Jira key using pre-built index
+  jiraCommon.findTaskByJiraKeyIndexed = (index, jiraKey) => {
+    return index.get(jiraKey) || null;
+  };
+
+  // Find project by Jira key using pre-built index
+  jiraCommon.findProjectByJiraKeyIndexed = (index, jiraKey) => {
+    return index.get(jiraKey) || null;
   };
 
   // Find nested folder by path (supports "Parent:Child" notation)
@@ -342,9 +376,11 @@
   };
 
   // Find or create project for parent issue
-  jiraCommon.findOrCreateProject = (parentKey, parentSummary, tagName, defaultFolder) => {
-    // Try to find existing project
-    let project = jiraCommon.findProjectByJiraKey(parentKey);
+  jiraCommon.findOrCreateProject = (parentKey, parentSummary, tagName, defaultFolder, projectIndex = null) => {
+    // Try to find existing project using index if available, otherwise linear scan
+    let project = projectIndex
+      ? jiraCommon.findProjectByJiraKeyIndexed(projectIndex, parentKey)
+      : jiraCommon.findProjectByJiraKey(parentKey);
 
     if (!project) {
       // Create new project
@@ -378,7 +414,7 @@
   };
 
   // Create task from Jira issue
-  jiraCommon.createTaskFromJiraIssue = (issue, jiraUrl, tagName, settings = {}) => {
+  jiraCommon.createTaskFromJiraIssue = (issue, jiraUrl, tagName, settings = {}, projectIndex = null) => {
     const jiraKey = issue.key;
     const fields = issue.fields;
     const taskName = `[${jiraKey}] ${fields.summary}`;
@@ -395,7 +431,8 @@
         parentKey,
         parentSummary,
         tagName,
-        settings.defaultProjectFolder
+        settings.defaultProjectFolder,
+        projectIndex
       );
     }
 
@@ -422,7 +459,7 @@
   };
 
   // Update task from Jira issue
-  jiraCommon.updateTaskFromJiraIssue = (task, issue, jiraUrl, tagName, settings = {}) => {
+  jiraCommon.updateTaskFromJiraIssue = (task, issue, jiraUrl, tagName, settings = {}, projectIndex = null) => {
     const jiraKey = issue.key;
     const fields = issue.fields;
     const expectedName = `[${jiraKey}] ${fields.summary}`;
@@ -447,7 +484,8 @@
           parentKey,
           parentSummary,
           tagName,
-          settings.defaultProjectFolder
+          settings.defaultProjectFolder,
+          projectIndex
         );
       }
 
