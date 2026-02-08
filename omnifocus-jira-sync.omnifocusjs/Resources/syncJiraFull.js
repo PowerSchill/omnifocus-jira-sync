@@ -247,7 +247,7 @@
     const issues = await fetchJiraIssues(jiraUrl, accountId, apiToken, jqlQuery, fullRefresh, lastSyncTime);
     console.log(`Fetched ${issues.length} issues from JIRA`);
 
-    const stats = { created: 0, updated: 0, reopened: 0, completed: 0 };
+    const stats = { created: 0, updated: 0, reopened: 0, completed: 0, skipped: 0 };
 
     for (const issue of issues) {
       const jiraKey = issue.key;
@@ -276,6 +276,8 @@
       } else if (!shouldSkipCreation) {
         createTaskFromJiraIssue(issue, jiraUrl, tagName);
         stats.created++;
+      } else {
+        stats.skipped++;
       }
     }
 
@@ -307,7 +309,7 @@
   const action = new PlugIn.Action(async function(selection, sender) {
     try {
       const stats = await performSync(true);
-      const message = `Full sync completed successfully!\n\nCreated: ${stats.created}\nUpdated: ${stats.updated}\nReopened: ${stats.reopened}\nCompleted: ${stats.completed}`;
+      const message = `Full sync completed successfully!\n\nCreated: ${stats.created}\nUpdated: ${stats.updated}\nReopened: ${stats.reopened}\nCompleted: ${stats.completed}\nSkipped: ${stats.skipped}`;
       console.log(message);
       new Alert('JIRA Full Sync Complete', message).show();
     } catch (error) {
