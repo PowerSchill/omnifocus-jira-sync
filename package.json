@@ -1,0 +1,12 @@
+{
+  "name": "omnifocus-jira-sync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OmniFocus plugin for one-way synchronization from Jira using JQL queries",
+  "scripts": {
+    "lint": "eslint 'omnifocus-jira-sync.omnifocusjs/Resources/**/*.js'"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  }
+}

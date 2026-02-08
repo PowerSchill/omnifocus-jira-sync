@@ -1,4 +1,4 @@
-/* global PlugIn Alert Task flattenedTasks tagNamed Tag */
+/* global PlugIn Alert Task tagNamed */
 (() => {
   const action = new PlugIn.Action(async function(selection, sender) {
     try {

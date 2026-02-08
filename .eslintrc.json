@@ -1,0 +1,44 @@
+{
+  "env": {
+    "es2020": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "script"
+  },
+  "globals": {
+    "PlugIn": "readonly",
+    "Form": "readonly",
+    "Alert": "readonly",
+    "Task": "readonly",
+    "Tag": "readonly",
+    "Project": "readonly",
+    "Version": "readonly",
+    "Preferences": "readonly",
+    "Credentials": "readonly",
+    "URL": "readonly",
+    "Timer": "readonly",
+    "flattenedTasks": "readonly",
+    "flattenedProjects": "readonly",
+    "tagNamed": "readonly",
+    "folderNamed": "readonly",
+    "console": "readonly"
+  },
+  "rules": {
+    "no-unused-vars": ["error", {
+      "varsIgnorePattern": "^_",
+      "argsIgnorePattern": "^(selection|sender|_)"
+    }],
+    "no-undef": "error",
+    "no-redeclare": ["error", { "builtinGlobals": false }],
+    "no-constant-condition": "error",
+    "no-dupe-keys": "error",
+    "no-duplicate-case": "error",
+    "no-unreachable": "error",
+    "eqeqeq": ["error", "always"],
+    "no-var": "error",
+    "prefer-const": "error",
+    "semi": ["error", "always"],
+    "quotes": ["error", "single", { "avoidEscape": true, "allowTemplateLiterals": true }]
+  }
+}

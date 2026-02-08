@@ -1,5 +1,8 @@
 # OmniFocus Jira Sync
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/PowerSchill/omnifocus-jira-sync/actions/workflows/lint.yml/badge.svg)](https://github.com/PowerSchill/omnifocus-jira-sync/actions/workflows/lint.yml)
+
 A one-way sync plugin that imports Jira issues into OmniFocus as tasks using JQL queries.
 
 ## Features
@@ -8,9 +11,13 @@ A one-way sync plugin that imports Jira issues into OmniFocus as tasks using JQL
 - **JQL-based filtering** to sync only the issues you care about
 - **Incremental sync** to fetch only recently updated issues
 - **Full refresh sync** to clean up tasks no longer in Jira
-- **Automatic status mapping** from Jira statuses to OmniFocus task states
+- **Automatic status mapping** from Jira statuses to OmniFocus task states, with configurable mappings
+- **Project organization** with automatic project assignment based on Jira parent issues
 - **Secure credential storage** using macOS Keychain
 - **Task deduplication** based on Jira issue keys
+- **Retry logic** with exponential backoff for transient network failures
+- **Input validation** with connection testing before saving configuration
+- **Optimized performance** with index-based O(1) task lookups
 
 ## Installation
 
@@ -58,6 +65,25 @@ Run **Sync Jira Full** to fetch all matching issues and clean up orphaned tasks.
 - Marks OmniFocus tasks as completed if they no longer appear in Jira results
 - Useful when issues move out of scope or are deleted
 - Recommended weekly or when troubleshooting
+
+## Advanced Configuration
+
+### Project Organization
+
+Enable **Project Organization** in the configuration to automatically group tasks by their Jira parent issue (epic). When enabled:
+
+- Tasks with a parent issue are placed in an OmniFocus Project named `[PARENT-KEY] Parent Summary`
+- You can set a **Default Project Folder** using colon-separated paths (e.g., `Work:Jira:Epics`) to organize projects into nested folders
+- Leave the folder field empty to create projects at the root level
+
+### Custom Status Mappings
+
+By default, these Jira statuses map to OmniFocus states:
+
+- **Completed**: `Done`, `Closed`, `Resolved`
+- **Dropped**: `Withdrawn`
+
+You can customize these in the configuration by providing comma-separated lists of status names. For example, set completed statuses to `Done, Closed, Resolved, Finished` to also mark "Finished" issues as completed.
 
 ## How It Works
 
@@ -146,6 +172,15 @@ Tasks are deduplicated by their `[JIRA-KEY]` prefix. If you see duplicates:
 
 See [CLAUDE.md](CLAUDE.md) for technical documentation about the plugin architecture and implementation details.
 
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+
+- Reporting bugs and requesting features
+- Development setup and manual testing
+- Coding standards and commit conventions
+- The pull request process
+
 ## License
 
-This project is provided as-is for personal use.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
