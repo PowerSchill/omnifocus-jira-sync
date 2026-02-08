@@ -368,16 +368,26 @@
       }
 
       // Move task if project changed
+      // Note: In OmniFocus, the project property is read-only after task creation
+      // Tasks cannot be moved between projects, so we skip this if it would fail
       const currentProject = task.containingProject;
       if (targetProject && currentProject !== targetProject) {
-        task.project = targetProject;
-        updated = true;
-        console.log(`Moved task ${jiraKey} to project ${targetProject.name}`);
+        try {
+          task.project = targetProject;
+          updated = true;
+          console.log(`Moved task ${jiraKey} to project ${targetProject.name}`);
+        } catch (e) {
+          console.log(`Cannot move task ${jiraKey} to project ${targetProject.name} (project is read-only after creation)`);
+        }
       } else if (!targetProject && currentProject) {
         // Parent removed, move to inbox
-        task.project = null;
-        updated = true;
-        console.log(`Moved task ${jiraKey} to inbox (parent removed)`);
+        try {
+          task.project = null;
+          updated = true;
+          console.log(`Moved task ${jiraKey} to inbox (parent removed)`);
+        } catch (e) {
+          console.log(`Cannot move task ${jiraKey} to inbox (project is read-only after creation)`);
+        }
       }
     }
 
