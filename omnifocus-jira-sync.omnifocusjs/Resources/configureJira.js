@@ -83,22 +83,14 @@
         throw new Error('All fields are required. Please fill in all configuration values.');
       }
 
-      // Validate Jira URL format and enforce HTTPS using URL constructor
-      try {
-        const url = new URL(jiraUrl);
+      // Validate Jira URL format
+      if (!jiraUrl.startsWith('https://')) {
+        throw new Error('Jira URL must start with https:// for security.\n\nExample: https://yourcompany.atlassian.net');
+      }
 
-        // Enforce HTTPS protocol (URL protocol is normalized to lowercase)
-        if (url.protocol !== 'https:') {
-          throw new Error('Jira URL must start with https:// for security.\n\nExample: https://yourcompany.atlassian.net');
-        }
-        // Check that it's a valid domain (has at least one dot)
-        if (!url.hostname.includes('.')) {
-          throw new Error('Jira URL must be a valid domain.\n\nExample: https://yourcompany.atlassian.net');
-        }
-      } catch (e) {
-        if (e.message.includes('Jira URL must')) {
-          throw e;
-        }
+      // Basic URL format validation
+      const urlPattern = /^https:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(\/.*)?$/;
+      if (!urlPattern.test(jiraUrl)) {
         throw new Error('Invalid Jira URL format. Please enter a valid URL.\n\nExample: https://yourcompany.atlassian.net');
       }
 
