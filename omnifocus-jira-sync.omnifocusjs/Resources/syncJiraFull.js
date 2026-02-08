@@ -3,6 +3,12 @@
   const SETTINGS_KEY = 'jiraSync.settings';
   const COMPLETED_STATUSES = ['Done', 'Closed', 'Resolved'];
   const DROPPED_STATUSES = ['Withdrawn'];
+  // JIRA API Configuration
+  const JIRA_API_VERSION = 3;
+  const MAX_RESULTS_PER_PAGE = 100;
+  const JIRA_FIELDS = ['summary', 'description', 'status', 'duedate', 'updated'];
+  const HTTP_STATUS_OK = 200;
+  const INITIAL_START_AT = 0;
 
   // Create API instances
   const preferences = new Preferences();
@@ -74,12 +80,12 @@
 
     console.log('Final JQL Query:', finalJql);
 
-    const searchUrl = `${baseUrl}/rest/api/3/search/jql`;
+    const searchUrl = `${baseUrl}/rest/api/${JIRA_API_VERSION}/search/jql`;
     const params = {
       jql: finalJql,
-      maxResults: 100,
-      startAt: 0,
-      fields: ['summary', 'description', 'status', 'duedate', 'updated']
+      maxResults: MAX_RESULTS_PER_PAGE,
+      startAt: INITIAL_START_AT,
+      fields: JIRA_FIELDS
     };
 
     const allIssues = [];
@@ -99,7 +105,7 @@
       request.allowsCellularAccess = true;
       const response = await request.fetch();
 
-      if (response.statusCode !== 200) {
+      if (response.statusCode !== HTTP_STATUS_OK) {
         throw new Error(`JIRA API returned status ${response.statusCode}: ${response.bodyString}`);
       }
 

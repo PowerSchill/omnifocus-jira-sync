@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Extracted magic numbers and strings to named constants for better maintainability
+  - `JIRA_API_VERSION = 3` for API endpoint version
+  - `MAX_RESULTS_PER_PAGE = 100` for pagination limit
+  - `JIRA_FIELDS` array for field names in API requests
+  - `HTTP_STATUS_OK = 200` for HTTP status code checks
+  - `INITIAL_START_AT = 0` for pagination starting point
+
 ## [1.0.0] - 2026-02-07
 
 ### Added
