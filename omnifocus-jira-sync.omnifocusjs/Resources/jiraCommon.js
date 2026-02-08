@@ -17,6 +17,15 @@
   jiraCommon.HTTP_STATUS_FORBIDDEN = 403;
   jiraCommon.HTTP_STATUS_NOT_FOUND = 404;
   jiraCommon.HTTP_STATUS_TOO_MANY_REQUESTS = 429;
+  jiraCommon.HTTP_STATUS_INTERNAL_SERVER_ERROR = 500;
+  jiraCommon.HTTP_STATUS_BAD_GATEWAY = 502;
+  jiraCommon.HTTP_STATUS_SERVICE_UNAVAILABLE = 503;
+  jiraCommon.HTTP_STATUS_GATEWAY_TIMEOUT = 504;
+  jiraCommon.RETRY_MAX_ATTEMPTS = 3;
+  jiraCommon.RETRY_BASE_DELAY_MS = 1000;
+  jiraCommon.RETRY_MAX_DELAY_MS = 60000;
+  jiraCommon.RETRYABLE_STATUS_CODES = [429, 500, 502, 503, 504];
+  jiraCommon.NON_RETRYABLE_STATUS_CODES = [400, 401, 403, 404];
 
   // API instances
   const preferences = new Preferences();
@@ -42,6 +51,73 @@
     }
 
     return result;
+  };
+
+  // Fetch with retry and exponential backoff
+  jiraCommon.fetchWithRetry = async (request) => {
+    const delay = (ms) => new Promise(resolve => Timer.once(ms / 1000, resolve));
+
+    let lastError = null;
+
+    for (let attempt = 0; attempt <= jiraCommon.RETRY_MAX_ATTEMPTS; attempt++) {
+      try {
+        const response = await request.fetch();
+
+        if (response.statusCode === jiraCommon.HTTP_STATUS_OK) {
+          return response;
+        }
+
+        if (jiraCommon.NON_RETRYABLE_STATUS_CODES.includes(response.statusCode)) {
+          const errorMessage = jiraCommon.createJiraErrorMessage(response.statusCode, response.bodyString);
+          throw new Error(errorMessage);
+        }
+
+        if (jiraCommon.RETRYABLE_STATUS_CODES.includes(response.statusCode)) {
+          if (attempt === jiraCommon.RETRY_MAX_ATTEMPTS) {
+            const errorMessage = jiraCommon.createJiraErrorMessage(response.statusCode, response.bodyString);
+            throw new Error(errorMessage);
+          }
+
+          let delayMs = jiraCommon.RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+
+          if (response.statusCode === jiraCommon.HTTP_STATUS_TOO_MANY_REQUESTS) {
+            const retryAfter = response.headers['Retry-After'] || response.headers['retry-after'];
+            if (retryAfter) {
+              const retryAfterMs = parseInt(retryAfter, 10) * 1000;
+              if (!isNaN(retryAfterMs) && retryAfterMs > 0) {
+                delayMs = Math.min(retryAfterMs, jiraCommon.RETRY_MAX_DELAY_MS);
+              }
+            }
+          }
+
+          console.log(`Retryable error (HTTP ${response.statusCode}), attempt ${attempt + 1}/${jiraCommon.RETRY_MAX_ATTEMPTS}. Retrying in ${delayMs}ms...`);
+          await delay(delayMs);
+          continue;
+        }
+
+        // Unknown status code - treat as non-retryable
+        const errorMessage = jiraCommon.createJiraErrorMessage(response.statusCode, response.bodyString);
+        throw new Error(errorMessage);
+      } catch (error) {
+        // Re-throw errors from createJiraErrorMessage (already formatted)
+        if (error.message.includes('Jira')) {
+          throw error;
+        }
+
+        // Network/connection error - retry
+        lastError = error;
+        if (attempt === jiraCommon.RETRY_MAX_ATTEMPTS) {
+          throw new Error(`Failed to connect to Jira after ${jiraCommon.RETRY_MAX_ATTEMPTS + 1} attempts: ${error.message}\n\nPlease check your network connection and Jira URL.`);
+        }
+
+        const delayMs = jiraCommon.RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+        console.log(`Network error: ${error.message}. Attempt ${attempt + 1}/${jiraCommon.RETRY_MAX_ATTEMPTS}. Retrying in ${delayMs}ms...`);
+        await delay(delayMs);
+      }
+    }
+
+    // Should not reach here, but just in case
+    throw lastError || new Error('Request failed after retries');
   };
 
   // Create actionable error message
@@ -166,12 +242,7 @@
       request.method = 'GET';
       request.headers = headers;
       request.allowsCellularAccess = true;
-      const response = await request.fetch();
-
-      if (response.statusCode !== jiraCommon.HTTP_STATUS_OK) {
-        const errorMessage = jiraCommon.createJiraErrorMessage(response.statusCode, response.bodyString);
-        throw new Error(errorMessage);
-      }
+      const response = await jiraCommon.fetchWithRetry(request);
 
       const data = JSON.parse(response.bodyString);
       allIssues.push(...data.issues);
@@ -459,25 +530,13 @@
     request.headers = headers;
     request.allowsCellularAccess = true;
 
-    try {
-      const response = await request.fetch();
+    const response = await jiraCommon.fetchWithRetry(request);
 
-      if (response.statusCode !== jiraCommon.HTTP_STATUS_OK) {
-        const errorMessage = jiraCommon.createJiraErrorMessage(response.statusCode, response.bodyString);
-        throw new Error(errorMessage);
-      }
-
-      const data = JSON.parse(response.bodyString);
-      return {
-        success: true,
-        issueCount: data.total || 0
-      };
-    } catch (error) {
-      if (error.message.includes('Jira')) {
-        throw error;
-      }
-      throw new Error(`Failed to connect to Jira: ${error.message}\n\nPlease check your network connection and Jira URL.`);
-    }
+    const data = JSON.parse(response.bodyString);
+    return {
+      success: true,
+      issueCount: data.total || 0
+    };
   };
 
   return jiraCommon;
