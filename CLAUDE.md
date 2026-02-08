@@ -15,6 +15,7 @@ OmniFocus plugins use a specific file structure:
 - **Action files**: Individual JavaScript files in `Resources/` directory, one per action
 
 Each action is an IIFE that returns a `PlugIn.Action` object with:
+
 - An async function that performs the action
 - A `validate` function that determines when the action is available
 
@@ -53,6 +54,7 @@ Each action is an IIFE that returns a `PlugIn.Action` object with:
 ### Task Mapping
 
 Jira issues map to OmniFocus tasks as follows:
+
 - **Task name**: `[JIRA-KEY] Issue Summary`
 - **Due date**: Synced from Jira's `duedate` field
 - **Notes**: Contains Jira URL, status, and description (converted from Atlassian Document Format)

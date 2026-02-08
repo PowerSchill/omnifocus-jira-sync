@@ -16,9 +16,11 @@ A one-way sync plugin that imports Jira issues into OmniFocus as tasks using JQL
 
 1. Download or clone this repository
 2. Copy the `omnifocus-jira-sync.omnifocusjs` directory to:
+
    ```
    ~/Library/Mobile Documents/iCloud~com~omnigroup~OmniFocus/Documents/Plug-Ins/
    ```
+
 3. Restart OmniFocus completely (⌘Q to quit, then relaunch)
 4. The plugin should appear in **Automation → Plug-Ins**
 
@@ -31,7 +33,7 @@ Before syncing, you need to configure the plugin:
 3. Fill in the required fields:
    - **JIRA URL**: Your Atlassian instance URL (e.g., `https://yourcompany.atlassian.net`)
    - **JIRA Account ID**: Your Jira account ID/email
-   - **JIRA API Token**: Generate one at https://id.atlassian.com/manage-profile/security/api-tokens
+   - **JIRA API Token**: Generate one at <https://id.atlassian.com/manage-profile/security/api-tokens>
    - **JQL Query**: The query to filter issues (e.g., `assignee = currentUser() AND resolution = Unresolved`)
    - **OmniFocus Tag**: Tag name to apply to synced tasks (e.g., `Work:JIRA`)
 4. Click **Save**
@@ -115,7 +117,7 @@ After each sync, you'll see statistics showing:
 ### Sync fails with authentication error
 
 1. Verify your Jira URL is correct (include `https://`)
-2. Regenerate your API token at https://id.atlassian.com/manage-profile/security/api-tokens
+2. Regenerate your API token at <https://id.atlassian.com/manage-profile/security/api-tokens>
 3. Re-run **Configure JIRA Sync** with the new token
 
 ### Issues not syncing
