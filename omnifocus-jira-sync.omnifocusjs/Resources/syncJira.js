@@ -27,18 +27,22 @@
 
       const stats = { created: 0, updated: 0, reopened: 0, completed: 0, skipped: 0 };
 
+      // Build indexes for O(1) lookups instead of O(n) scans per issue
+      const taskIndex = lib.buildTaskIndex();
+      const projectIndex = settings.enableProjectOrganization ? lib.buildProjectIndex() : null;
+
       for (const issue of issues) {
         const jiraKey = issue.key;
         const fields = issue.fields;
         const statusName = fields.status.name;
         const statusMappings = lib.getStatusMappings(settings);
         const shouldSkipCreation = statusMappings.completed.includes(statusName) || statusMappings.dropped.includes(statusName);
-        const existingTask = lib.findTaskByJiraKey(jiraKey);
+        const existingTask = lib.findTaskByJiraKeyIndexed(taskIndex, jiraKey);
 
         if (existingTask) {
           const wasCompleted = existingTask.taskStatus === Task.Status.Completed;
           const wasDropped = existingTask.taskStatus === Task.Status.Dropped;
-          const wasUpdated = lib.updateTaskFromJiraIssue(existingTask, issue, jiraUrl, tagName, settings);
+          const wasUpdated = lib.updateTaskFromJiraIssue(existingTask, issue, jiraUrl, tagName, settings, projectIndex);
 
           if (wasUpdated) {
             const isNowCompleted = existingTask.taskStatus === Task.Status.Completed;
@@ -53,7 +57,7 @@
             }
           }
         } else if (!shouldSkipCreation) {
-          lib.createTaskFromJiraIssue(issue, jiraUrl, tagName, settings);
+          lib.createTaskFromJiraIssue(issue, jiraUrl, tagName, settings, projectIndex);
           stats.created++;
         } else {
           stats.skipped++;
