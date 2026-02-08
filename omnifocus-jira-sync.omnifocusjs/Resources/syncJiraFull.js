@@ -9,6 +9,12 @@
   const JIRA_FIELDS = ['summary', 'description', 'status', 'duedate', 'updated'];
   const HTTP_STATUS_OK = 200;
   const INITIAL_START_AT = 0;
+  // HTTP Status codes
+  const HTTP_STATUS_UNAUTHORIZED = 401;
+  const HTTP_STATUS_FORBIDDEN = 403;
+  const HTTP_STATUS_NOT_FOUND = 404;
+  const HTTP_STATUS_TOO_MANY_REQUESTS = 429;
+  const HTTP_STATUS_BAD_REQUEST = 400;
 
   // Create API instances
   const preferences = new Preferences();
@@ -34,6 +40,54 @@
     }
 
     return result;
+  }
+
+  function createJiraErrorMessage(statusCode, responseBody) {
+    let errorMessage = '';
+    let jiraErrorDetails = '';
+
+    // Try to parse Jira's error response
+    try {
+      const errorData = JSON.parse(responseBody);
+      if (errorData.errorMessages && errorData.errorMessages.length > 0) {
+        jiraErrorDetails = `\n\nJira says: ${errorData.errorMessages.join('; ')}`;
+      } else if (errorData.errors) {
+        const errors = Object.entries(errorData.errors).map(([key, value]) => `${key}: ${value}`);
+        jiraErrorDetails = `\n\nJira says: ${errors.join('; ')}`;
+      }
+    } catch (e) {
+      // Response body is not valid JSON or doesn't match expected format
+    }
+
+    switch (statusCode) {
+      case HTTP_STATUS_BAD_REQUEST:
+        errorMessage = 'Invalid request to Jira API. This usually means there is a problem with your JQL query.';
+        if (jiraErrorDetails) {
+          errorMessage += jiraErrorDetails;
+        } else {
+          errorMessage += '\n\nPlease check your JQL query in "Configure JIRA Sync".';
+        }
+        break;
+      case HTTP_STATUS_UNAUTHORIZED:
+        errorMessage = 'Authentication failed. Your Jira API token may be invalid or expired.\n\nPlease run "Configure JIRA Sync" to regenerate your API token.';
+        break;
+      case HTTP_STATUS_FORBIDDEN:
+        errorMessage = 'Access denied. Your Jira account does not have permission to access this resource.\n\nPlease check your Jira permissions or contact your Jira administrator.';
+        break;
+      case HTTP_STATUS_NOT_FOUND:
+        errorMessage = 'Jira instance not found. The Jira URL may be incorrect.\n\nPlease verify your Jira URL in "Configure JIRA Sync".';
+        break;
+      case HTTP_STATUS_TOO_MANY_REQUESTS:
+        errorMessage = 'Rate limited by Jira. Too many requests have been made in a short period.\n\nPlease wait a few minutes and try again.';
+        break;
+      default:
+        errorMessage = `Jira API returned status ${statusCode}.${jiraErrorDetails}`;
+        if (!jiraErrorDetails) {
+          errorMessage += '\n\nPlease check your Jira configuration and try again.';
+        }
+    }
+
+    return errorMessage;
   }
 
   function getSettings() {
@@ -106,7 +160,8 @@
       const response = await request.fetch();
 
       if (response.statusCode !== HTTP_STATUS_OK) {
-        throw new Error(`JIRA API returned status ${response.statusCode}: ${response.bodyString}`);
+        const errorMessage = createJiraErrorMessage(response.statusCode, response.bodyString);
+        throw new Error(errorMessage);
       }
 
       const data = JSON.parse(response.bodyString);
