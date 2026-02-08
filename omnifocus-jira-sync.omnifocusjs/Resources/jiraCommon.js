@@ -222,6 +222,32 @@
     return projects.length > 0 ? projects[0] : null;
   };
 
+  // Find nested folder by path (supports "Parent:Child" notation)
+  jiraCommon.findNestedFolder = (folderPath) => {
+    if (!folderPath) return null;
+
+    const parts = folderPath.split(':').map(p => p.trim());
+    let currentFolder = null;
+
+    // Find the top-level folder
+    currentFolder = folderNamed(parts[0]);
+    if (!currentFolder) {
+      return null;
+    }
+
+    // Navigate through nested folders
+    for (let i = 1; i < parts.length; i++) {
+      const childFolders = currentFolder.folders;
+      const foundChild = childFolders.find(f => f.name === parts[i]);
+      if (!foundChild) {
+        return null;
+      }
+      currentFolder = foundChild;
+    }
+
+    return currentFolder;
+  };
+
   // Find or create project for parent issue
   jiraCommon.findOrCreateProject = (parentKey, parentSummary, tagName, defaultFolder) => {
     // Try to find existing project
@@ -233,9 +259,10 @@
 
       // Find or create in the specified folder
       if (defaultFolder) {
-        const folder = folderNamed(defaultFolder);
+        const folder = jiraCommon.findNestedFolder(defaultFolder);
         if (folder) {
           project = new Project(projectName, folder);
+          console.log(`Created project in folder "${defaultFolder}": ${projectName}`);
         } else {
           console.log(`Folder "${defaultFolder}" not found, creating project at root level`);
           project = new Project(projectName);
@@ -243,6 +270,7 @@
       } else {
         // Create at root level
         project = new Project(projectName);
+        console.log(`Created project at root level: ${projectName}`);
       }
 
       // Set as active
@@ -251,8 +279,6 @@
       // Add tag
       const tag = tagNamed(tagName) || new Tag(tagName);
       project.addTag(tag);
-
-      console.log(`Created project: ${projectName}`);
     }
 
     return project;
