@@ -97,3 +97,6 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/macos,visualstudiocode,windows,linux
 
 .claude/settings.local.json
+
+# Node.js (ESLint devDependency)
+node_modules/

@@ -1,0 +1,55 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of the bug
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Run "Sync Jira" action
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened
+    validations:
+      required: true
+  - type: input
+    id: omnifocus-version
+    attributes:
+      label: OmniFocus Version
+      placeholder: e.g., 4.5
+    validations:
+      required: true
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS Version
+      placeholder: e.g., 15.3
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console.app Logs
+      description: Paste relevant logs from Console.app (filter for "OmniFocus")
+      render: text

@@ -42,5 +42,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Sync Jira**: Perform incremental sync of modified issues since last sync
 - **Sync Jira Full**: Perform full refresh and mark orphaned tasks as completed
 
-[Unreleased]: https://github.com/yourusername/omnifocus-jira-sync/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/yourusername/omnifocus-jira-sync/releases/tag/v1.0.0
+[Unreleased]: https://github.com/PowerSchill/omnifocus-jira-sync/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/PowerSchill/omnifocus-jira-sync/releases/tag/v1.0.0
