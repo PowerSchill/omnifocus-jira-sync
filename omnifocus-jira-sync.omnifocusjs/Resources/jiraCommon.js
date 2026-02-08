@@ -1,4 +1,4 @@
-/* global PlugIn Version Preferences Credentials Task Tag URL */
+/* global PlugIn Version Preferences Credentials Task Tag URL Project flattenedProjects folderNamed */
 (() => {
   const jiraCommon = new PlugIn.Library(new Version('1.0'));
 
@@ -9,7 +9,7 @@
   jiraCommon.DROPPED_STATUSES = ['Withdrawn'];
   jiraCommon.JIRA_API_VERSION = 3;
   jiraCommon.MAX_RESULTS_PER_PAGE = 100;
-  jiraCommon.JIRA_FIELDS = ['summary', 'description', 'status', 'duedate', 'updated'];
+  jiraCommon.JIRA_FIELDS = ['summary', 'description', 'status', 'duedate', 'updated', 'parent'];
   jiraCommon.INITIAL_START_AT = 0;
   jiraCommon.HTTP_STATUS_OK = 200;
   jiraCommon.HTTP_STATUS_BAD_REQUEST = 400;
@@ -143,12 +143,11 @@
     const params = {
       jql: finalJql,
       maxResults: jiraCommon.MAX_RESULTS_PER_PAGE,
-      startAt: jiraCommon.INITIAL_START_AT,
       fields: jiraCommon.JIRA_FIELDS
     };
 
     const allIssues = [];
-    let hasMore = true;
+    let nextPageToken = null;
     const auth = jiraCommon.base64Encode(`${accountId}:${apiToken}`);
     const headers = {
       'Authorization': `Basic ${auth}`,
@@ -156,7 +155,12 @@
       'Content-Type': 'application/json'
     };
 
-    while (hasMore) {
+    do {
+      // Add nextPageToken to params if it exists
+      if (nextPageToken) {
+        params.nextPageToken = nextPageToken;
+      }
+
       const url = `${searchUrl}?${Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')}`;
       const request = URL.FetchRequest.fromString(url);
       request.method = 'GET';
@@ -172,12 +176,17 @@
       const data = JSON.parse(response.bodyString);
       allIssues.push(...data.issues);
 
-      if (data.startAt + data.maxResults < data.total) {
-        params.startAt += params.maxResults;
+      console.log(`Pagination: fetched ${data.issues.length} issues, isLast=${data.isLast}, accumulated=${allIssues.length}`);
+
+      // Token-based pagination
+      if (!data.isLast && data.nextPageToken) {
+        nextPageToken = data.nextPageToken;
+        console.log(`Fetching next page with token: ${nextPageToken.substring(0, 20)}...`);
       } else {
-        hasMore = false;
+        nextPageToken = null;
+        console.log(`Pagination complete: fetched all ${allIssues.length} issues`);
       }
-    }
+    } while (nextPageToken);
 
     return allIssues;
   };
@@ -215,12 +224,101 @@
     return tasks.length > 0 ? tasks[0] : null;
   };
 
+  // Find project by Jira key
+  jiraCommon.findProjectByJiraKey = (jiraKey) => {
+    const prefix = `[${jiraKey}]`;
+    const projects = flattenedProjects.filter(project => project.name.startsWith(prefix));
+    return projects.length > 0 ? projects[0] : null;
+  };
+
+  // Find nested folder by path (supports "Parent:Child" notation)
+  jiraCommon.findNestedFolder = (folderPath) => {
+    if (!folderPath) return null;
+
+    const parts = folderPath.split(':').map(p => p.trim());
+    let currentFolder = null;
+
+    // Find the top-level folder
+    currentFolder = folderNamed(parts[0]);
+    if (!currentFolder) {
+      console.log(`Folder "${folderPath}" not found: top-level folder "${parts[0]}" does not exist`);
+      return null;
+    }
+
+    // Navigate through nested folders
+    for (let i = 1; i < parts.length; i++) {
+      const childFolders = currentFolder.folders;
+      const foundChild = childFolders.find(f => f.name === parts[i]);
+      if (!foundChild) {
+        console.log(`Folder "${folderPath}" not found: subfolder "${parts[i]}" does not exist in "${currentFolder.name}"`);
+        return null;
+      }
+      currentFolder = foundChild;
+    }
+
+    return currentFolder;
+  };
+
+  // Find or create project for parent issue
+  jiraCommon.findOrCreateProject = (parentKey, parentSummary, tagName, defaultFolder) => {
+    // Try to find existing project
+    let project = jiraCommon.findProjectByJiraKey(parentKey);
+
+    if (!project) {
+      // Create new project
+      const projectName = `[${parentKey}] ${parentSummary}`;
+
+      // Find or create in the specified folder
+      if (defaultFolder) {
+        const folder = jiraCommon.findNestedFolder(defaultFolder);
+        if (folder) {
+          project = new Project(projectName, folder);
+          console.log(`Created project in folder "${defaultFolder}": ${projectName}`);
+        } else {
+          console.log(`Folder "${defaultFolder}" not found, creating project at root level`);
+          project = new Project(projectName);
+        }
+      } else {
+        // Create at root level
+        project = new Project(projectName);
+        console.log(`Created project at root level: ${projectName}`);
+      }
+
+      // Set as active
+      project.status = Project.Status.Active;
+
+      // Add tag
+      const tag = tagNamed(tagName) || new Tag(tagName);
+      project.addTag(tag);
+    }
+
+    return project;
+  };
+
   // Create task from Jira issue
-  jiraCommon.createTaskFromJiraIssue = (issue, jiraUrl, tagName) => {
+  jiraCommon.createTaskFromJiraIssue = (issue, jiraUrl, tagName, settings = {}) => {
     const jiraKey = issue.key;
     const fields = issue.fields;
     const taskName = `[${jiraKey}] ${fields.summary}`;
-    const task = new Task(taskName);
+
+    // Determine project assignment
+    let project = null;
+    if (settings.enableProjectOrganization && fields.parent) {
+      const parentKey = fields.parent.key;
+      const parentSummary = fields.parent.fields && fields.parent.fields.summary
+        ? fields.parent.fields.summary
+        : parentKey;
+
+      project = jiraCommon.findOrCreateProject(
+        parentKey,
+        parentSummary,
+        tagName,
+        settings.defaultProjectFolder
+      );
+    }
+
+    // Create task in project or at root
+    const task = project ? new Task(taskName, project) : new Task(taskName);
 
     if (fields.duedate) {
       try {
@@ -242,7 +340,7 @@
   };
 
   // Update task from Jira issue
-  jiraCommon.updateTaskFromJiraIssue = (task, issue, jiraUrl) => {
+  jiraCommon.updateTaskFromJiraIssue = (task, issue, jiraUrl, tagName, settings = {}) => {
     const jiraKey = issue.key;
     const fields = issue.fields;
     const expectedName = `[${jiraKey}] ${fields.summary}`;
@@ -251,6 +349,48 @@
     if (task.name !== expectedName) {
       task.name = expectedName;
       updated = true;
+    }
+
+    // Handle project changes if organization is enabled
+    if (settings.enableProjectOrganization) {
+      let targetProject = null;
+
+      if (fields.parent) {
+        const parentKey = fields.parent.key;
+        const parentSummary = fields.parent.fields && fields.parent.fields.summary
+          ? fields.parent.fields.summary
+          : parentKey;
+
+        targetProject = jiraCommon.findOrCreateProject(
+          parentKey,
+          parentSummary,
+          tagName,
+          settings.defaultProjectFolder
+        );
+      }
+
+      // Move task if project changed
+      // Note: In OmniFocus, the project property is read-only after task creation
+      // Tasks cannot be moved between projects, so we skip this if it would fail
+      const currentProject = task.containingProject;
+      if (targetProject && currentProject !== targetProject) {
+        try {
+          task.project = targetProject;
+          updated = true;
+          console.log(`Moved task ${jiraKey} to project ${targetProject.name}`);
+        } catch (e) {
+          console.log(`Cannot move task ${jiraKey} to project ${targetProject.name} (project is read-only after creation)`);
+        }
+      } else if (!targetProject && currentProject) {
+        // Parent removed, move to inbox
+        try {
+          task.project = null;
+          updated = true;
+          console.log(`Moved task ${jiraKey} to inbox (parent removed)`);
+        } catch (e) {
+          console.log(`Cannot move task ${jiraKey} to inbox (project is read-only after creation)`);
+        }
+      }
     }
 
     const newDueDate = fields.duedate ? new Date(fields.duedate) : null;

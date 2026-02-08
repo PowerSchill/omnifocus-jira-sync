@@ -43,11 +43,26 @@
       );
       tagNameField.placeholder = 'Work:JIRA';
 
+      const enableProjectOrgField = new Form.Field.Checkbox(
+        'enableProjectOrganization',
+        'Enable Project Organization',
+        currentSettings.enableProjectOrganization || false
+      );
+
+      const defaultProjectFolderField = new Form.Field.String(
+        'defaultProjectFolder',
+        'Default Folder for Projects (optional)',
+        currentSettings.defaultProjectFolder || ''
+      );
+      defaultProjectFolderField.placeholder = 'Leave empty for root level';
+
       form.addField(jiraUrlField);
       form.addField(accountIdField);
       form.addField(apiTokenField);
       form.addField(jqlQueryField);
       form.addField(tagNameField);
+      form.addField(enableProjectOrgField);
+      form.addField(defaultProjectFolderField);
 
       const formPrompt = 'Configure JIRA Sync Settings';
       const buttonTitle = 'Save';
@@ -60,28 +75,22 @@
       const apiToken = (formObject.values.apiToken || '').trim();
       const jqlQuery = (formObject.values.jqlQuery || '').trim();
       const tagName = (formObject.values.tagName || '').trim();
+      const enableProjectOrganization = formObject.values.enableProjectOrganization || false;
+      const defaultProjectFolder = (formObject.values.defaultProjectFolder || '').trim();
 
       // Validate required fields
       if (!jiraUrl || !accountId || !apiToken || !jqlQuery || !tagName) {
         throw new Error('All fields are required. Please fill in all configuration values.');
       }
 
-      // Validate Jira URL format and enforce HTTPS using URL constructor
-      try {
-        const url = new URL(jiraUrl);
+      // Validate Jira URL format
+      if (!jiraUrl.startsWith('https://')) {
+        throw new Error('Jira URL must start with https:// for security.\n\nExample: https://yourcompany.atlassian.net');
+      }
 
-        // Enforce HTTPS protocol (URL protocol is normalized to lowercase)
-        if (url.protocol !== 'https:') {
-          throw new Error('Jira URL must start with https:// for security.\n\nExample: https://yourcompany.atlassian.net');
-        }
-        // Check that it's a valid domain (has at least one dot)
-        if (!url.hostname.includes('.')) {
-          throw new Error('Jira URL must be a valid domain.\n\nExample: https://yourcompany.atlassian.net');
-        }
-      } catch (e) {
-        if (e.message.includes('Jira URL must')) {
-          throw e;
-        }
+      // Basic URL format validation
+      const urlPattern = /^https:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(\/.*)?$/;
+      if (!urlPattern.test(jiraUrl)) {
         throw new Error('Invalid Jira URL format. Please enter a valid URL.\n\nExample: https://yourcompany.atlassian.net');
       }
 
@@ -111,6 +120,8 @@
         jiraUrl: normalizedUrl,
         jqlQuery: jqlQuery,
         tagName: tagName,
+        enableProjectOrganization: enableProjectOrganization,
+        defaultProjectFolder: defaultProjectFolder,
         lastSyncTime: currentSettings.lastSyncTime || null
       };
 

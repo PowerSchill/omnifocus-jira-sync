@@ -37,7 +37,7 @@
         if (existingTask) {
           const wasCompleted = existingTask.taskStatus === Task.Status.Completed;
           const wasDropped = existingTask.taskStatus === Task.Status.Dropped;
-          const wasUpdated = lib.updateTaskFromJiraIssue(existingTask, issue, jiraUrl);
+          const wasUpdated = lib.updateTaskFromJiraIssue(existingTask, issue, jiraUrl, tagName, settings);
 
           if (wasUpdated) {
             const isNowCompleted = existingTask.taskStatus === Task.Status.Completed;
@@ -52,7 +52,7 @@
             }
           }
         } else if (!shouldSkipCreation) {
-          lib.createTaskFromJiraIssue(issue, jiraUrl, tagName);
+          lib.createTaskFromJiraIssue(issue, jiraUrl, tagName, settings);
           stats.created++;
         } else {
           stats.skipped++;
@@ -65,9 +65,20 @@
       const issueKeysFromJira = new Set(issues.map(i => i.key));
 
       for (const task of existingTasks) {
+        // Skip if not a Task object (use instanceof to check)
+        if (!(task instanceof Task)) {
+          continue;
+        }
+
+        // Skip if this is a Project (Projects have a 'tasks' property)
+        if (task.tasks !== undefined) {
+          continue;
+        }
+
         const match = task.name.match(/^\[([^\]]+)\]/);
         if (match) {
           const taskJiraKey = match[1];
+
           if (!issueKeysFromJira.has(taskJiraKey) &&
               task.taskStatus !== Task.Status.Completed &&
               task.taskStatus !== Task.Status.Dropped) {
