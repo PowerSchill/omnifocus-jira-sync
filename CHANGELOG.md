@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0](https://github.com/PowerSchill/omnifocus-jira-sync/compare/omnifocus-jira-sync-v1.0.0...omnifocus-jira-sync-v1.1.0) (2026-02-08)
+
+
+### Features
+
+* add actionable error messages for Jira API failures ([85aa83d](https://github.com/PowerSchill/omnifocus-jira-sync/commit/85aa83d4c26f3da4c4ab416f582d5b1c5a06e514)), closes [#9](https://github.com/PowerSchill/omnifocus-jira-sync/issues/9)
+* add API connection validation during configuration ([0008a3a](https://github.com/PowerSchill/omnifocus-jira-sync/commit/0008a3a9ebece9998162334058c5a11db317830b)), closes [#7](https://github.com/PowerSchill/omnifocus-jira-sync/issues/7)
+* add comprehensive input validation to configuration ([#57](https://github.com/PowerSchill/omnifocus-jira-sync/issues/57)) ([286a539](https://github.com/PowerSchill/omnifocus-jira-sync/commit/286a53967d75afcb37eed80f5c0f86e3b4de86d0))
+* add configurable status mappings for completed and dropped statuses ([#60](https://github.com/PowerSchill/omnifocus-jira-sync/issues/60)) ([d05f1c6](https://github.com/PowerSchill/omnifocus-jira-sync/commit/d05f1c63929e1af62a5d301521c63d5bd91d17b4))
+* add initial implementation of Jira sync plugin with configuration and sync functionalities ([5cb1e1d](https://github.com/PowerSchill/omnifocus-jira-sync/commit/5cb1e1df9c49abe783acb41dddb48b692c42f03c))
+* add retry logic with exponential backoff for network failures ([#59](https://github.com/PowerSchill/omnifocus-jira-sync/issues/59)) ([dd3cef1](https://github.com/PowerSchill/omnifocus-jira-sync/commit/dd3cef1c7b1860426ab04d3714dd6502813cb27f)), closes [#8](https://github.com/PowerSchill/omnifocus-jira-sync/issues/8)
+* add task organization with automatic project assignment ([#58](https://github.com/PowerSchill/omnifocus-jira-sync/issues/58)) ([24965d6](https://github.com/PowerSchill/omnifocus-jira-sync/commit/24965d68dc0c82cc56d099dfb48ec5b85bbc8a04))
+
+
+### Performance Improvements
+
+* optimize task finding with index-based O(1) lookups ([#61](https://github.com/PowerSchill/omnifocus-jira-sync/issues/61)) ([c2a63f4](https://github.com/PowerSchill/omnifocus-jira-sync/commit/c2a63f4999ed496a8f400bc276a54aa0276b965e)), closes [#6](https://github.com/PowerSchill/omnifocus-jira-sync/issues/6)
+
 ## [Unreleased]
 
 ## [1.0.0] - 2026-02-08
