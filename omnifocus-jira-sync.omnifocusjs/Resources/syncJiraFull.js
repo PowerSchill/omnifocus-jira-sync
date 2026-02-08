@@ -31,7 +31,8 @@
         const jiraKey = issue.key;
         const fields = issue.fields;
         const statusName = fields.status.name;
-        const shouldSkipCreation = lib.COMPLETED_STATUSES.includes(statusName) || lib.DROPPED_STATUSES.includes(statusName);
+        const statusMappings = lib.getStatusMappings(settings);
+        const shouldSkipCreation = statusMappings.completed.includes(statusName) || statusMappings.dropped.includes(statusName);
         const existingTask = lib.findTaskByJiraKey(jiraKey);
 
         if (existingTask) {

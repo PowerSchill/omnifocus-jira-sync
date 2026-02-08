@@ -164,6 +164,17 @@
     return errorMessage;
   };
 
+  // Get effective status mappings (settings override defaults)
+  jiraCommon.getStatusMappings = (settings) => {
+    const completed = (settings && Array.isArray(settings.completedStatuses) && settings.completedStatuses.length > 0)
+      ? settings.completedStatuses
+      : jiraCommon.COMPLETED_STATUSES;
+    const dropped = (settings && Array.isArray(settings.droppedStatuses) && settings.droppedStatuses.length > 0)
+      ? settings.droppedStatuses
+      : jiraCommon.DROPPED_STATUSES;
+    return { completed, dropped };
+  };
+
   // Settings management
   jiraCommon.getSettings = () => {
     const settingsString = preferences.read(jiraCommon.SETTINGS_KEY);
@@ -486,8 +497,9 @@
     }
 
     const statusName = fields.status.name;
-    const shouldBeCompleted = jiraCommon.COMPLETED_STATUSES.includes(statusName);
-    const shouldBeDropped = jiraCommon.DROPPED_STATUSES.includes(statusName);
+    const statusMappings = jiraCommon.getStatusMappings(settings);
+    const shouldBeCompleted = statusMappings.completed.includes(statusName);
+    const shouldBeDropped = statusMappings.dropped.includes(statusName);
 
     if (shouldBeCompleted && task.taskStatus !== Task.Status.Completed) {
       task.markComplete();
