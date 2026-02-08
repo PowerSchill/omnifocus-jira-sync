@@ -56,6 +56,20 @@
       );
       defaultProjectFolderField.placeholder = 'Leave empty for root level';
 
+      const completedStatusesField = new Form.Field.String(
+        'completedStatuses',
+        'Completed Statuses (comma-separated)',
+        Array.isArray(currentSettings.completedStatuses) ? currentSettings.completedStatuses.join(', ') : ''
+      );
+      completedStatusesField.placeholder = 'Done, Closed, Resolved';
+
+      const droppedStatusesField = new Form.Field.String(
+        'droppedStatuses',
+        'Dropped Statuses (comma-separated)',
+        Array.isArray(currentSettings.droppedStatuses) ? currentSettings.droppedStatuses.join(', ') : ''
+      );
+      droppedStatusesField.placeholder = 'Withdrawn';
+
       form.addField(jiraUrlField);
       form.addField(accountIdField);
       form.addField(apiTokenField);
@@ -63,6 +77,8 @@
       form.addField(tagNameField);
       form.addField(enableProjectOrgField);
       form.addField(defaultProjectFolderField);
+      form.addField(completedStatusesField);
+      form.addField(droppedStatusesField);
 
       const formPrompt = 'Configure JIRA Sync Settings';
       const buttonTitle = 'Save';
@@ -77,6 +93,15 @@
       const tagName = (formObject.values.tagName || '').trim();
       const enableProjectOrganization = formObject.values.enableProjectOrganization || false;
       const defaultProjectFolder = (formObject.values.defaultProjectFolder || '').trim();
+      const completedStatusesRaw = (formObject.values.completedStatuses || '').trim();
+      const droppedStatusesRaw = (formObject.values.droppedStatuses || '').trim();
+
+      const completedStatuses = completedStatusesRaw
+        ? completedStatusesRaw.split(',').map(s => s.trim()).filter(s => s.length > 0)
+        : [];
+      const droppedStatuses = droppedStatusesRaw
+        ? droppedStatusesRaw.split(',').map(s => s.trim()).filter(s => s.length > 0)
+        : [];
 
       // Validate required fields
       if (!jiraUrl || !accountId || !apiToken || !jqlQuery || !tagName) {
@@ -122,6 +147,8 @@
         tagName: tagName,
         enableProjectOrganization: enableProjectOrganization,
         defaultProjectFolder: defaultProjectFolder,
+        completedStatuses: completedStatuses.length > 0 ? completedStatuses : undefined,
+        droppedStatuses: droppedStatuses.length > 0 ? droppedStatuses : undefined,
         lastSyncTime: currentSettings.lastSyncTime || null
       };
 
