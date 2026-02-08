@@ -43,11 +43,26 @@
       );
       tagNameField.placeholder = 'Work:JIRA';
 
+      const enableProjectOrgField = new Form.Field.Checkbox(
+        'enableProjectOrganization',
+        'Enable Project Organization',
+        currentSettings.enableProjectOrganization || false
+      );
+
+      const defaultProjectFolderField = new Form.Field.String(
+        'defaultProjectFolder',
+        'Default Folder for Projects (optional)',
+        currentSettings.defaultProjectFolder || ''
+      );
+      defaultProjectFolderField.placeholder = 'Leave empty for root level';
+
       form.addField(jiraUrlField);
       form.addField(accountIdField);
       form.addField(apiTokenField);
       form.addField(jqlQueryField);
       form.addField(tagNameField);
+      form.addField(enableProjectOrgField);
+      form.addField(defaultProjectFolderField);
 
       const formPrompt = 'Configure JIRA Sync Settings';
       const buttonTitle = 'Save';
@@ -60,6 +75,8 @@
       const apiToken = (formObject.values.apiToken || '').trim();
       const jqlQuery = (formObject.values.jqlQuery || '').trim();
       const tagName = (formObject.values.tagName || '').trim();
+      const enableProjectOrganization = formObject.values.enableProjectOrganization || false;
+      const defaultProjectFolder = (formObject.values.defaultProjectFolder || '').trim();
 
       // Validate required fields
       if (!jiraUrl || !accountId || !apiToken || !jqlQuery || !tagName) {
@@ -111,6 +128,8 @@
         jiraUrl: normalizedUrl,
         jqlQuery: jqlQuery,
         tagName: tagName,
+        enableProjectOrganization: enableProjectOrganization,
+        defaultProjectFolder: defaultProjectFolder,
         lastSyncTime: currentSettings.lastSyncTime || null
       };
 

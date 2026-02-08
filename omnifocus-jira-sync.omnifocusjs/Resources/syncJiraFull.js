@@ -37,7 +37,7 @@
         if (existingTask) {
           const wasCompleted = existingTask.taskStatus === Task.Status.Completed;
           const wasDropped = existingTask.taskStatus === Task.Status.Dropped;
-          const wasUpdated = lib.updateTaskFromJiraIssue(existingTask, issue, jiraUrl);
+          const wasUpdated = lib.updateTaskFromJiraIssue(existingTask, issue, jiraUrl, tagName, settings);
 
           if (wasUpdated) {
             const isNowCompleted = existingTask.taskStatus === Task.Status.Completed;
@@ -52,7 +52,7 @@
             }
           }
         } else if (!shouldSkipCreation) {
-          lib.createTaskFromJiraIssue(issue, jiraUrl, tagName);
+          lib.createTaskFromJiraIssue(issue, jiraUrl, tagName, settings);
           stats.created++;
         } else {
           stats.skipped++;

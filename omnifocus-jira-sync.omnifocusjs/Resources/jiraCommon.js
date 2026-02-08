@@ -1,4 +1,4 @@
-/* global PlugIn Version Preferences Credentials Task Tag URL */
+/* global PlugIn Version Preferences Credentials Task Tag URL Project flattenedProjects folderNamed */
 (() => {
   const jiraCommon = new PlugIn.Library(new Version('1.0'));
 
@@ -9,7 +9,7 @@
   jiraCommon.DROPPED_STATUSES = ['Withdrawn'];
   jiraCommon.JIRA_API_VERSION = 3;
   jiraCommon.MAX_RESULTS_PER_PAGE = 100;
-  jiraCommon.JIRA_FIELDS = ['summary', 'description', 'status', 'duedate', 'updated'];
+  jiraCommon.JIRA_FIELDS = ['summary', 'description', 'status', 'duedate', 'updated', 'parent'];
   jiraCommon.INITIAL_START_AT = 0;
   jiraCommon.HTTP_STATUS_OK = 200;
   jiraCommon.HTTP_STATUS_BAD_REQUEST = 400;
@@ -215,12 +215,73 @@
     return tasks.length > 0 ? tasks[0] : null;
   };
 
+  // Find project by Jira key
+  jiraCommon.findProjectByJiraKey = (jiraKey) => {
+    const prefix = `[${jiraKey}]`;
+    const projects = flattenedProjects.filter(project => project.name.startsWith(prefix));
+    return projects.length > 0 ? projects[0] : null;
+  };
+
+  // Find or create project for parent issue
+  jiraCommon.findOrCreateProject = (parentKey, parentSummary, tagName, defaultFolder) => {
+    // Try to find existing project
+    let project = jiraCommon.findProjectByJiraKey(parentKey);
+
+    if (!project) {
+      // Create new project
+      const projectName = `[${parentKey}] ${parentSummary}`;
+
+      // Find or create in the specified folder
+      if (defaultFolder) {
+        const folder = folderNamed(defaultFolder);
+        if (folder) {
+          project = new Project(projectName, folder);
+        } else {
+          console.log(`Folder "${defaultFolder}" not found, creating project at root level`);
+          project = new Project(projectName);
+        }
+      } else {
+        // Create at root level
+        project = new Project(projectName);
+      }
+
+      // Set as active
+      project.status = Project.Status.Active;
+
+      // Add tag
+      const tag = tagNamed(tagName) || new Tag(tagName);
+      project.addTag(tag);
+
+      console.log(`Created project: ${projectName}`);
+    }
+
+    return project;
+  };
+
   // Create task from Jira issue
-  jiraCommon.createTaskFromJiraIssue = (issue, jiraUrl, tagName) => {
+  jiraCommon.createTaskFromJiraIssue = (issue, jiraUrl, tagName, settings = {}) => {
     const jiraKey = issue.key;
     const fields = issue.fields;
     const taskName = `[${jiraKey}] ${fields.summary}`;
-    const task = new Task(taskName);
+
+    // Determine project assignment
+    let project = null;
+    if (settings.enableProjectOrganization && fields.parent) {
+      const parentKey = fields.parent.key;
+      const parentSummary = fields.parent.fields && fields.parent.fields.summary
+        ? fields.parent.fields.summary
+        : parentKey;
+
+      project = jiraCommon.findOrCreateProject(
+        parentKey,
+        parentSummary,
+        tagName,
+        settings.defaultProjectFolder
+      );
+    }
+
+    // Create task in project or at root
+    const task = project ? new Task(taskName, project) : new Task(taskName);
 
     if (fields.duedate) {
       try {
@@ -242,7 +303,7 @@
   };
 
   // Update task from Jira issue
-  jiraCommon.updateTaskFromJiraIssue = (task, issue, jiraUrl) => {
+  jiraCommon.updateTaskFromJiraIssue = (task, issue, jiraUrl, tagName, settings = {}) => {
     const jiraKey = issue.key;
     const fields = issue.fields;
     const expectedName = `[${jiraKey}] ${fields.summary}`;
@@ -251,6 +312,38 @@
     if (task.name !== expectedName) {
       task.name = expectedName;
       updated = true;
+    }
+
+    // Handle project changes if organization is enabled
+    if (settings.enableProjectOrganization) {
+      let targetProject = null;
+
+      if (fields.parent) {
+        const parentKey = fields.parent.key;
+        const parentSummary = fields.parent.fields && fields.parent.fields.summary
+          ? fields.parent.fields.summary
+          : parentKey;
+
+        targetProject = jiraCommon.findOrCreateProject(
+          parentKey,
+          parentSummary,
+          tagName,
+          settings.defaultProjectFolder
+        );
+      }
+
+      // Move task if project changed
+      const currentProject = task.containingProject;
+      if (targetProject && currentProject !== targetProject) {
+        task.project = targetProject;
+        updated = true;
+        console.log(`Moved task ${jiraKey} to project ${targetProject.name}`);
+      } else if (!targetProject && currentProject) {
+        // Parent removed, move to inbox
+        task.project = null;
+        updated = true;
+        console.log(`Moved task ${jiraKey} to inbox (parent removed)`);
+      }
     }
 
     const newDueDate = fields.duedate ? new Date(fields.duedate) : null;
