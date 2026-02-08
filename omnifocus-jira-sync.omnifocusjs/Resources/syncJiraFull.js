@@ -67,18 +67,17 @@
       for (const task of existingTasks) {
         // Skip if not a Task object (use instanceof to check)
         if (!(task instanceof Task)) {
-          console.log(`Skipping non-Task object: ${task.name}`);
+          continue;
+        }
+
+        // Skip if this is a Project (Projects have a 'tasks' property)
+        if (task.tasks !== undefined) {
           continue;
         }
 
         const match = task.name.match(/^\[([^\]]+)\]/);
         if (match) {
           const taskJiraKey = match[1];
-
-          // Debug logging
-          const inJiraResults = issueKeysFromJira.has(taskJiraKey);
-          const hasProject = task.containingProject !== null;
-          console.log(`Checking task ${taskJiraKey}: inResults=${inJiraResults}, hasProject=${hasProject}, projectName=${hasProject ? task.containingProject.name : 'N/A'}`);
 
           if (!issueKeysFromJira.has(taskJiraKey) &&
               task.taskStatus !== Task.Status.Completed &&

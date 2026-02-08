@@ -241,6 +241,7 @@
     // Find the top-level folder
     currentFolder = folderNamed(parts[0]);
     if (!currentFolder) {
+      console.log(`Folder "${folderPath}" not found: top-level folder "${parts[0]}" does not exist`);
       return null;
     }
 
@@ -249,6 +250,7 @@
       const childFolders = currentFolder.folders;
       const foundChild = childFolders.find(f => f.name === parts[i]);
       if (!foundChild) {
+        console.log(`Folder "${folderPath}" not found: subfolder "${parts[i]}" does not exist in "${currentFolder.name}"`);
         return null;
       }
       currentFolder = foundChild;
