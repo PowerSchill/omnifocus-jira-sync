@@ -107,6 +107,12 @@
     }
   });
 
+  /**
+   * Validates whether the full sync action can be executed
+   * @param {Object} selection - The current OmniFocus selection
+   * @param {Object} sender - The sender of the action
+   * @returns {boolean} Always returns true as full sync is always available
+   */
   action.validate = function(selection, sender) {
     return true;
   };
