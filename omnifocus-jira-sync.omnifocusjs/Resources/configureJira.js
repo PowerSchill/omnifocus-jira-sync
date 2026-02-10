@@ -154,7 +154,7 @@
 
       lib.saveSettings(newSettings);
 
-      const successMessage = `JIRA sync settings have been saved successfully.\n\nConnection test passed: Found ${testResult.issueCount} issue(s) matching your JQL query.`;
+      const successMessage = `JIRA sync settings have been saved successfully.\n\nAuthenticated as: ${testResult.displayName}\nConnection test passed: Found ${testResult.issueCount} issue(s) matching your JQL query.`;
       new Alert('Configuration Saved', successMessage).show();
       console.log('JIRA sync configuration saved');
 

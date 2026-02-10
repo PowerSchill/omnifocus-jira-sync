@@ -206,6 +206,7 @@
   };
 
   jiraCommon.saveCredentials = (accountId, apiToken) => {
+    credentials.remove(jiraCommon.CREDENTIAL_SERVICE);
     credentials.write(jiraCommon.CREDENTIAL_SERVICE, accountId, apiToken);
   };
 
@@ -558,8 +559,26 @@
   // Test connection
   jiraCommon.testConnection = async (jiraUrl, accountId, apiToken, jqlQuery) => {
     const baseUrl = jiraUrl.replace(/\/$/, '');
-    const searchUrl = `${baseUrl}/rest/api/${jiraCommon.JIRA_API_VERSION}/search/jql`;
+    const auth = jiraCommon.base64Encode(`${accountId}:${apiToken}`);
+    const headers = {
+      'Authorization': `Basic ${auth}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    };
 
+    // Step 1: Verify credentials using /myself endpoint (always requires auth)
+    const myselfUrl = `${baseUrl}/rest/api/${jiraCommon.JIRA_API_VERSION}/myself`;
+    const myselfRequest = URL.FetchRequest.fromString(myselfUrl);
+    myselfRequest.method = 'GET';
+    myselfRequest.headers = headers;
+    myselfRequest.allowsCellularAccess = true;
+
+    const myselfResponse = await jiraCommon.fetchWithRetry(myselfRequest);
+    const myselfData = JSON.parse(myselfResponse.bodyString);
+    console.log(`Authenticated as: ${myselfData.displayName} (${myselfData.emailAddress})`);
+
+    // Step 2: Verify JQL query
+    const searchUrl = `${baseUrl}/rest/api/${jiraCommon.JIRA_API_VERSION}/search/jql`;
     const params = {
       jql: jqlQuery,
       maxResults: 1,
@@ -568,13 +587,6 @@
     };
 
     const url = `${searchUrl}?${Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')}`;
-    const auth = jiraCommon.base64Encode(`${accountId}:${apiToken}`);
-    const headers = {
-      'Authorization': `Basic ${auth}`,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    };
-
     const request = URL.FetchRequest.fromString(url);
     request.method = 'GET';
     request.headers = headers;
@@ -585,6 +597,7 @@
     const data = JSON.parse(response.bodyString);
     return {
       success: true,
+      displayName: myselfData.displayName,
       issueCount: data.total || 0
     };
   };
