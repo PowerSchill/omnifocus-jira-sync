@@ -40,8 +40,18 @@
       return;
     }
 
-    // Create a sanitized copy of the object
-    const sanitized = JSON.parse(JSON.stringify(obj));
+    // Create a sanitized copy of the object in a way that won't throw
+    let sanitized
+    try {
+      sanitized = JSON.parse(JSON.stringify(obj));
+    } catch (e) {
+      // Fall back to a safe, non-throwing representation
+      try {
+        sanitized = { value: String(obj), warning: 'Non-JSON-serializable object logged' };
+      } catch (e2) {
+        sanitized = { warning: 'Unable to serialize object for logging' };
+      }
+    }
 
     // List of sensitive keys to redact
     const sensitiveKeys = [
