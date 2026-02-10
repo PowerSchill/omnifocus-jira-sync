@@ -16,15 +16,24 @@
     "actions": [
         {
             "identifier": "configureJira",
-            "image": "gearshape.2"
+            "image": "gearshape.fill",
+            "label": "Jira Settings",
+            "shortLabel": "Settings",
+            "paletteLabel": "Jira Settings"
         },
         {
             "identifier": "syncJira",
-            "image": "arrow.triangle.2.circlepath"
+            "image": "arrow.triangle.2.circlepath",
+            "label": "Sync Recent Changes",
+            "shortLabel": "Quick Sync",
+            "paletteLabel": "Quick Sync"
         },
         {
             "identifier": "syncJiraFull",
-            "image": "arrow.triangle.2.circlepath"
+            "image": "arrow.triangle.2.circlepath.circle.fill",
+            "label": "Full Refresh from Jira",
+            "shortLabel": "Full Refresh",
+            "paletteLabel": "Full Refresh"
         }
     ]
 }
