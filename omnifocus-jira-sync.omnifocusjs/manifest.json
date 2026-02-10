@@ -3,10 +3,6 @@
     "author": "OmniFocus Jira Sync",
     "version": "1.1.0",
     "description": "One-way sync from Jira to OmniFocus using JQL queries",
-    "label": "Jira Sync",
-    "paletteLabel": "Jira Sync",
-    "mediumLabel": "Jira Sync",
-    "longLabel": "Sync Jira Issues to OmniFocus",
     "defaultLocale": "en",
     "libraries": [
         {
@@ -16,24 +12,15 @@
     "actions": [
         {
             "identifier": "configureJira",
-            "image": "gearshape.fill",
-            "label": "Jira Settings",
-            "shortLabel": "Settings",
-            "paletteLabel": "Jira Settings"
+            "image": "gearshape.fill"
         },
         {
             "identifier": "syncJira",
-            "image": "arrow.triangle.2.circlepath",
-            "label": "Sync Recent Changes",
-            "shortLabel": "Quick Sync",
-            "paletteLabel": "Quick Sync"
+            "image": "arrow.triangle.2.circlepath"
         },
         {
             "identifier": "syncJiraFull",
-            "image": "arrow.triangle.2.circlepath.circle.fill",
-            "label": "Full Refresh from Jira",
-            "shortLabel": "Full Refresh",
-            "paletteLabel": "Full Refresh"
+            "image": "arrow.triangle.2.circlepath.circle.fill"
         }
     ]
 }
