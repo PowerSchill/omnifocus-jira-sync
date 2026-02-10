@@ -31,6 +31,65 @@
   const preferences = new Preferences();
   const credentials = new Credentials();
 
+  // Safe logging function to prevent credential leakage
+  // Usage: jiraCommon.safeLog('Message', object) or jiraCommon.safeLog('Message')
+  // Automatically redacts sensitive fields like passwords, tokens, emails, etc.
+  jiraCommon.safeLog = (message, obj) => {
+    if (obj === undefined) {
+      console.log(message);
+      return;
+    }
+
+    // Create a sanitized copy of the object in a way that won't throw
+    let sanitized;
+    try {
+      sanitized = JSON.parse(JSON.stringify(obj));
+    } catch (e) {
+      // Fall back to a safe, non-throwing representation
+      try {
+        sanitized = { value: String(obj), warning: 'Non-JSON-serializable object logged' };
+      } catch (e2) {
+        sanitized = { warning: 'Unable to serialize object for logging' };
+      }
+    }
+
+    // List of sensitive keys to redact
+    const sensitiveKeys = [
+      'password', 'apiToken', 'token', 'authorization', 'Authorization',
+      'api_token', 'access_token', 'accessToken', 'secret', 'key',
+      'nextPageToken', 'pageToken', 'emailAddress', 'email'
+    ];
+
+    // Recursively sanitize the object
+    function sanitizeObject(obj) {
+      if (typeof obj !== 'object' || obj === null) {
+        return obj;
+      }
+
+      if (Array.isArray(obj)) {
+        return obj.map(item => sanitizeObject(item));
+      }
+
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          // Check if key matches any sensitive pattern
+          const isSensitive = sensitiveKeys.some(sensitiveKey =>
+            key.toLowerCase().includes(sensitiveKey.toLowerCase())
+          );
+
+          if (isSensitive) {
+            obj[key] = '***';
+          } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+            sanitizeObject(obj[key]);
+          }
+        }
+      }
+    }
+
+    sanitizeObject(sanitized);
+    console.log(message, JSON.stringify(sanitized));
+  };
+
   // Base64 encoding function
   jiraCommon.base64Encode = (str) => {
     const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -264,7 +323,7 @@
       // Token-based pagination
       if (!data.isLast && data.nextPageToken) {
         nextPageToken = data.nextPageToken;
-        console.log(`Fetching next page with token: ${nextPageToken.substring(0, 20)}...`);
+        console.log('Fetching next page...');
       } else {
         nextPageToken = null;
         console.log(`Pagination complete: fetched all ${allIssues.length} issues`);
@@ -575,7 +634,7 @@
 
     const myselfResponse = await jiraCommon.fetchWithRetry(myselfRequest);
     const myselfData = JSON.parse(myselfResponse.bodyString);
-    console.log(`Authenticated as: ${myselfData.displayName} (${myselfData.emailAddress})`);
+    console.log(`Authenticated as: ${myselfData.displayName}`);
 
     // Step 2: Verify JQL query
     const searchUrl = `${baseUrl}/rest/api/${jiraCommon.JIRA_API_VERSION}/search/jql`;

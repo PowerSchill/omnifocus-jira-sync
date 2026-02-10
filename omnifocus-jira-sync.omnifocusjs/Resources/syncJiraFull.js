@@ -31,13 +31,17 @@
       const taskIndex = lib.buildTaskIndex();
       const projectIndex = settings.enableProjectOrganization ? lib.buildProjectIndex() : null;
 
-      for (const issue of issues) {
+      const totalIssues = issues.length;
+      for (let i = 0; i < issues.length; i++) {
+        const issue = issues[i];
         const jiraKey = issue.key;
         const fields = issue.fields;
         const statusName = fields.status.name;
         const statusMappings = lib.getStatusMappings(settings);
         const shouldSkipCreation = statusMappings.completed.includes(statusName) || statusMappings.dropped.includes(statusName);
         const existingTask = lib.findTaskByJiraKeyIndexed(taskIndex, jiraKey);
+
+        console.log(`Processing issue ${i + 1}/${totalIssues}: ${jiraKey}`);
 
         if (existingTask) {
           const wasCompleted = existingTask.taskStatus === Task.Status.Completed;
@@ -69,6 +73,7 @@
       const existingTasks = tag ? tag.tasks : [];
       const issueKeysFromJira = new Set(issues.map(i => i.key));
 
+      console.log(`Checking ${existingTasks.length} existing tasks for stale issues...`);
       for (const task of existingTasks) {
         // Skip if not a Task object (use instanceof to check)
         if (!(task instanceof Task)) {

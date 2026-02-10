@@ -136,7 +136,7 @@
         jqlQuery
       );
 
-      console.log('Connection test successful:', JSON.stringify(testResult));
+      lib.safeLog('Connection test successful:', testResult);
 
       // Connection successful, save credentials and settings
       lib.saveCredentials(accountId, apiToken);
