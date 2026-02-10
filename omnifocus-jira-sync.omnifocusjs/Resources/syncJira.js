@@ -31,13 +31,17 @@
       const taskIndex = lib.buildTaskIndex();
       const projectIndex = settings.enableProjectOrganization ? lib.buildProjectIndex() : null;
 
-      for (const issue of issues) {
+      const totalIssues = issues.length;
+      for (let i = 0; i < issues.length; i++) {
+        const issue = issues[i];
         const jiraKey = issue.key;
         const fields = issue.fields;
         const statusName = fields.status.name;
         const statusMappings = lib.getStatusMappings(settings);
         const shouldSkipCreation = statusMappings.completed.includes(statusName) || statusMappings.dropped.includes(statusName);
         const existingTask = lib.findTaskByJiraKeyIndexed(taskIndex, jiraKey);
+
+        console.log(`Processing issue ${i + 1}/${totalIssues}: ${jiraKey}`);
 
         if (existingTask) {
           const wasCompleted = existingTask.taskStatus === Task.Status.Completed;
