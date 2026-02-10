@@ -544,7 +544,7 @@
       task.markComplete();
       updated = true;
     } else if (shouldBeDropped && task.taskStatus !== Task.Status.Dropped) {
-      task.drop();
+      task.drop(true);
       updated = true;
     } else if (!shouldBeCompleted && !shouldBeDropped) {
       if (task.taskStatus === Task.Status.Completed || task.taskStatus === Task.Status.Dropped) {
