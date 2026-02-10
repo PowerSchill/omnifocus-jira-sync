@@ -41,7 +41,7 @@
     }
 
     // Create a sanitized copy of the object in a way that won't throw
-    let sanitized
+    let sanitized;
     try {
       sanitized = JSON.parse(JSON.stringify(obj));
     } catch (e) {
