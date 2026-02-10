@@ -71,7 +71,7 @@
       }
 
       for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
           // Check if key matches any sensitive pattern
           const isSensitive = sensitiveKeys.some(sensitiveKey =>
             key.toLowerCase().includes(sensitiveKey.toLowerCase())
