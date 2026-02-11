@@ -74,7 +74,7 @@ This is an OmniFocus plugin that provides one-way synchronization from Jira to O
 
 **Task identification:** Tasks are found by looking for the `[JIRA-KEY]` prefix in the task name
 
-**ADF parsing:** Jira descriptions use Atlassian Document Format (JSON). The `convertAdfToPlainText()` function recursively extracts text content.
+**ADF parsing:** Jira descriptions use Atlassian Document Format (JSON). The `convertAdfToMarkdown()` function converts ADF to Markdown, preserving formatting like headings, lists, bold, italic, code, and links.
 
 **Pagination:** Jira API responses are paginated (100 issues at a time). The plugin loops through all pages using `startAt` parameter.
 

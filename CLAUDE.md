@@ -68,7 +68,7 @@ Jira issues map to OmniFocus tasks as follows:
 
 **Task identification**: Tasks are found by looking for the `[JIRA-KEY]` prefix in the task name
 
-**ADF parsing**: Jira descriptions use Atlassian Document Format (JSON). The `convertAdfToPlainText()` function recursively extracts text content.
+**ADF parsing**: Jira descriptions use Atlassian Document Format (JSON). The `convertAdfToMarkdown()` function converts ADF to Markdown, preserving formatting like headings, lists, bold, italic, code, and links.
 
 **Base64 encoding**: Custom implementation since `btoa()` is not available in OmniFocus JavaScript environment. Required for Basic Auth headers.
 
