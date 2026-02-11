@@ -508,8 +508,8 @@
     return markdown.trim();
   };
 
-  // Deprecated: Use convertAdfToMarkdown instead
-  // Keep the old function name for backward compatibility
+  // Backward compatibility alias (maintained indefinitely)
+  // The function now returns Markdown instead of plain text
   jiraCommon.convertAdfToPlainText = jiraCommon.convertAdfToMarkdown;
 
   // Find task by Jira key (linear scan)
