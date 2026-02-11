@@ -333,31 +333,181 @@
     return allIssues;
   };
 
-  // Convert ADF to plain text
-  jiraCommon.convertAdfToPlainText = (adf) => {
+  // Convert ADF to Markdown
+  jiraCommon.convertAdfToMarkdown = (adf) => {
     if (!adf || typeof adf !== 'object') {
       return '';
     }
 
-    let text = '';
+    let markdown = '';
 
-    function extractText(node) {
-      if (!node) return;
+    function convertNode(node, context = {}) {
+      if (!node) return '';
 
-      if (node.type === 'text') {
-        text += node.text;
-      } else if (node.content && Array.isArray(node.content)) {
-        node.content.forEach(child => extractText(child));
+      let result = '';
+
+      switch (node.type) {
+        case 'doc':
+          // Document root
+          if (node.content && Array.isArray(node.content)) {
+            result = node.content.map(child => convertNode(child, context)).join('');
+          }
+          break;
+
+        case 'paragraph':
+          // Paragraph
+          if (node.content && Array.isArray(node.content)) {
+            result = node.content.map(child => convertNode(child, context)).join('') + '\n\n';
+          } else {
+            result = '\n\n';
+          }
+          break;
+
+        case 'heading':
+          // Heading (h1-h6)
+          const level = node.attrs && node.attrs.level ? node.attrs.level : 1;
+          const headingPrefix = '#'.repeat(Math.min(level, 6)) + ' ';
+          if (node.content && Array.isArray(node.content)) {
+            result = headingPrefix + node.content.map(child => convertNode(child, context)).join('') + '\n\n';
+          }
+          break;
+
+        case 'bulletList':
+          // Unordered list
+          if (node.content && Array.isArray(node.content)) {
+            result = node.content.map(child => convertNode(child, { ...context, listType: 'bullet', listDepth: (context.listDepth || 0) })).join('') + '\n';
+          }
+          break;
+
+        case 'orderedList':
+          // Ordered list
+          if (node.content && Array.isArray(node.content)) {
+            result = node.content.map((child, index) => convertNode(child, { ...context, listType: 'ordered', listDepth: (context.listDepth || 0), listIndex: index + 1 })).join('') + '\n';
+          }
+          break;
+
+        case 'listItem':
+          // List item
+          const indent = '  '.repeat(context.listDepth || 0);
+          const bullet = context.listType === 'ordered' ? `${context.listIndex || 1}. ` : '- ';
+          if (node.content && Array.isArray(node.content)) {
+            // Handle nested lists and paragraphs in list items
+            const itemContent = node.content.map(child => {
+              if (child.type === 'paragraph') {
+                // For paragraphs in list items, don't add extra newlines
+                if (child.content && Array.isArray(child.content)) {
+                  return child.content.map(c => convertNode(c, context)).join('');
+                }
+                return '';
+              } else if (child.type === 'bulletList' || child.type === 'orderedList') {
+                // Nested lists
+                return '\n' + convertNode(child, { ...context, listDepth: (context.listDepth || 0) + 1 });
+              } else {
+                return convertNode(child, context);
+              }
+            }).join('');
+            result = indent + bullet + itemContent + '\n';
+          }
+          break;
+
+        case 'codeBlock':
+          // Code block
+          const language = node.attrs && node.attrs.language ? node.attrs.language : '';
+          let codeContent = '';
+          if (node.content && Array.isArray(node.content)) {
+            codeContent = node.content.map(child => convertNode(child, context)).join('');
+          }
+          result = '```' + language + '\n' + codeContent + '```\n\n';
+          break;
+
+        case 'text':
+          // Text with optional marks (bold, italic, code, etc.)
+          let text = node.text || '';
+          if (node.marks && Array.isArray(node.marks)) {
+            // Apply marks in order
+            node.marks.forEach(mark => {
+              switch (mark.type) {
+                case 'strong':
+                  text = `**${text}**`;
+                  break;
+                case 'em':
+                  text = `*${text}*`;
+                  break;
+                case 'code':
+                  text = `\`${text}\``;
+                  break;
+                case 'strike':
+                  text = `~~${text}~~`;
+                  break;
+                case 'underline':
+                  // Markdown doesn't have native underline, use HTML
+                  text = `<u>${text}</u>`;
+                  break;
+                case 'link':
+                  const href = mark.attrs && mark.attrs.href ? mark.attrs.href : '';
+                  text = `[${text}](${href})`;
+                  break;
+              }
+            });
+          }
+          result = text;
+          break;
+
+        case 'hardBreak':
+          // Hard line break
+          result = '  \n';
+          break;
+
+        case 'rule':
+          // Horizontal rule
+          result = '---\n\n';
+          break;
+
+        case 'blockquote':
+          // Blockquote
+          if (node.content && Array.isArray(node.content)) {
+            const quoteContent = node.content.map(child => convertNode(child, context)).join('');
+            // Add > prefix to each line
+            result = quoteContent.split('\n').map(line => line ? `> ${line}` : '>').join('\n') + '\n\n';
+          }
+          break;
+
+        case 'emoji':
+          // Emoji shortcode
+          const shortName = node.attrs && node.attrs.shortName ? node.attrs.shortName : '';
+          result = shortName;
+          break;
+
+        case 'mention':
+          // User mention
+          const displayName = node.attrs && node.attrs.text ? node.attrs.text : '';
+          result = `@${displayName}`;
+          break;
+
+        case 'inlineCard':
+        case 'mediaInline':
+        case 'mediaSingle':
+          // Rich media - extract URL if available
+          const url = node.attrs && node.attrs.url ? node.attrs.url : '';
+          result = url ? `[Link](${url})` : '';
+          break;
+
+        default:
+          // Unknown node type - try to extract content
+          if (node.content && Array.isArray(node.content)) {
+            result = node.content.map(child => convertNode(child, context)).join('');
+          }
       }
 
-      if (node.type === 'paragraph' || node.type === 'heading') {
-        text += '\n';
-      }
+      return result;
     }
 
-    extractText(adf);
-    return text.trim();
+    markdown = convertNode(adf);
+    return markdown.trim();
   };
+
+  // Keep the old function name for backward compatibility (deprecated)
+  jiraCommon.convertAdfToPlainText = jiraCommon.convertAdfToMarkdown;
 
   // Find task by Jira key (linear scan)
   jiraCommon.findTaskByJiraKey = (jiraKey) => {
