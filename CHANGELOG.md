@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0](https://github.com/PowerSchill/omnifocus-jira-sync/compare/omnifocus-jira-sync-v1.1.0...omnifocus-jira-sync-v1.2.0) (2026-02-11)
+
+
+### Features
+
+* add friendly menu labels and distinct icons ([#70](https://github.com/PowerSchill/omnifocus-jira-sync/issues/70)) ([2d74aeb](https://github.com/PowerSchill/omnifocus-jira-sync/commit/2d74aebb77300c9ccdc389f2af855f38f1da010d))
+* add sync progress logging to console ([#69](https://github.com/PowerSchill/omnifocus-jira-sync/issues/69)) ([cea316b](https://github.com/PowerSchill/omnifocus-jira-sync/commit/cea316ba3f2f8c19b8c7c6f78a9c7c2d23d4145c))
+
+
+### Bug Fixes
+
+* pass required allOccurrences argument to Task.drop() ([0fbbfcb](https://github.com/PowerSchill/omnifocus-jira-sync/commit/0fbbfcbb0346da2e320e12c2de7bef9837669daa))
+* validate credentials with /myself endpoint before saving config ([24ed45d](https://github.com/PowerSchill/omnifocus-jira-sync/commit/24ed45d87ecd3819db476d2fa13443264dcec4be))
+
 ## [1.1.0](https://github.com/PowerSchill/omnifocus-jira-sync/compare/omnifocus-jira-sync-v1.0.0...omnifocus-jira-sync-v1.1.0) (2026-02-08)
 
 
