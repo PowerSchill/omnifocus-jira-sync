@@ -467,13 +467,15 @@
           // Blockquote
           if (node.content && Array.isArray(node.content)) {
             const quoteContent = node.content.map(child => convertNode(child, context)).join('');
-            // Add > prefix to each line
-            result = quoteContent.split('\n').map(line => line ? `> ${line}` : '>').join('\n') + '\n\n';
+            // Trim trailing newlines to avoid empty lines, then add > prefix to each line
+            const trimmedContent = quoteContent.replace(/\n+$/, '');
+            result = trimmedContent.split('\n').map(line => `> ${line}`).join('\n') + '\n\n';
           }
           break;
 
         case 'emoji':
-          // Emoji shortcode
+          // Emoji shortcode (e.g., :smile:)
+          // Note: OmniFocus may not render these as actual emoji
           const shortName = node.attrs && node.attrs.shortName ? node.attrs.shortName : '';
           result = shortName;
           break;
