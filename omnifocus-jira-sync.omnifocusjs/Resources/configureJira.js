@@ -133,13 +133,17 @@
         }
       }
 
-      // Basic URL format validation (allow both http and https at this point)
-      // Use a simple pattern to catch obvious mistakes, then rely on connection test for final validation
-      // Pattern: protocol + host (alphanumeric, dots, hyphens) + optional port + optional path
-      // Allows single-word hostnames like 'localhost' for testing
-      const urlPattern = /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*?(:\d+)?(\/.*)?$/;
+      // Basic URL format validation
+      // Simple pattern to catch obvious format errors before connection test
+      // Allows hostnames, localhost, and IP addresses with optional ports and paths
+      const urlPattern = /^https?:\/\/[a-zA-Z0-9.-]+(:\d+)?(\/.*)?$/;
       if (!urlPattern.test(jiraUrl)) {
         throw new Error('Invalid Jira URL format. Please enter a valid URL.\n\nExample: https://yourcompany.atlassian.net');
+      }
+
+      // Check for consecutive dots which indicate typos
+      if (jiraUrl.includes('..')) {
+        throw new Error('Invalid Jira URL: consecutive dots detected. Please check your URL.\n\nExample: https://yourcompany.atlassian.net');
       }
 
       // Validate tag name format (basic check)
