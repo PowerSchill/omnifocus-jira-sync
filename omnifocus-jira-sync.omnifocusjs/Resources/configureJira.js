@@ -135,8 +135,8 @@
 
       // Basic URL format validation
       // Simple pattern to catch obvious format errors before connection test
-      // Allows hostnames, localhost, and IP addresses with optional ports and paths
-      const urlPattern = /^https?:\/\/[a-zA-Z0-9.-]+(:\d+)?(\/.*)?$/;
+      // Hostname must start and end with alphanumeric, can contain dots/hyphens in between
+      const urlPattern = /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?(:\d+)?(\/.*)?$/;
       if (!urlPattern.test(jiraUrl)) {
         throw new Error('Invalid Jira URL format. Please enter a valid URL.\n\nExample: https://yourcompany.atlassian.net');
       }
