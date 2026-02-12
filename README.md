@@ -45,6 +45,60 @@ Before syncing, you need to configure the plugin:
    - **OmniFocus Tag**: Tag name to apply to synced tasks (e.g., `Work:JIRA`)
 4. Click **Save**
 
+## JQL Query Examples
+
+If you're new to Jira Query Language (JQL), here are some common query patterns to get you started:
+
+### My Unresolved Issues
+
+```jql
+assignee = currentUser() AND resolution = Unresolved
+```
+
+Fetches all your open issues that haven't been resolved yet.
+
+### Current Sprint
+
+```jql
+sprint in openSprints() AND assignee = currentUser()
+```
+
+Syncs issues assigned to you in active sprints.
+
+### High Priority Issues
+
+```jql
+assignee = currentUser() AND priority in (High, Highest)
+```
+
+Focuses on your most important tasks.
+
+### Specific Project
+
+```jql
+project = PROJ AND assignee = currentUser()
+```
+
+Replace `PROJ` with your project key (e.g., `project = MYTEAM`).
+
+### By Label
+
+```jql
+labels = important AND assignee = currentUser()
+```
+
+Filters issues with specific labels.
+
+### Combining Criteria
+
+You can combine multiple conditions for more specific queries:
+
+```jql
+project = PROJ AND assignee = currentUser() AND resolution = Unresolved AND priority in (High, Highest)
+```
+
+For more information on JQL syntax and advanced queries, see the [Atlassian JQL documentation](https://www.atlassian.com/software/jira/guides/jql).
+
 ## Usage
 
 The plugin provides two sync options:
