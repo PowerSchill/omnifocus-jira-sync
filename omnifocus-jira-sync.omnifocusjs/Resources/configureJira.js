@@ -135,8 +135,8 @@
 
       // Basic URL format validation (allow both http and https at this point)
       // Use a simple pattern to catch obvious mistakes, then rely on connection test for final validation
-      // Pattern ensures dots only appear as separators (not consecutive)
-      const urlPattern = /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.?[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(\:\d+)?(\/.*)?$/;
+      // Pattern: protocol + host (alphanumeric, dots, hyphens) + optional port + optional path
+      const urlPattern = /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(\:\d+)?(\/.*)?$/;
       if (!urlPattern.test(jiraUrl)) {
         throw new Error('Invalid Jira URL format. Please enter a valid URL.\n\nExample: https://yourcompany.atlassian.net');
       }
