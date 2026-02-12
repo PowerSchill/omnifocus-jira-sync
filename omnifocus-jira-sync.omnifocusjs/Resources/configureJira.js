@@ -108,13 +108,33 @@
         throw new Error('All fields are required. Please fill in all configuration values.');
       }
 
-      // Validate Jira URL format
+      // Validate Jira URL format - enforce HTTPS with override option
       if (!jiraUrl.startsWith('https://')) {
-        throw new Error('Jira URL must start with https:// for security.\n\nExample: https://yourcompany.atlassian.net');
+        // Check if it's HTTP (insecure protocol)
+        if (jiraUrl.startsWith('http://')) {
+          const securityWarning = new Alert(
+            'Security Warning: Insecure Connection',
+            'Using HTTP instead of HTTPS will expose your credentials and data to potential interception.\n\n' +
+            'HTTP connections are not encrypted and should only be used for local testing.\n\n' +
+            'Do you want to proceed anyway?'
+          );
+          securityWarning.addOption('Cancel');
+          securityWarning.addOption('Proceed with HTTP');
+          
+          const choice = await securityWarning.show();
+          if (choice === 0) {
+            // User chose to cancel
+            throw new Error('Configuration cancelled. Please use HTTPS for secure connections.');
+          }
+          // User chose to proceed, continue with validation
+        } else {
+          // URL doesn't start with http:// or https://
+          throw new Error('Jira URL must start with https:// for security.\n\nExample: https://yourcompany.atlassian.net');
+        }
       }
 
-      // Basic URL format validation
-      const urlPattern = /^https:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(\/.*)?$/;
+      // Basic URL format validation (allow both http and https at this point)
+      const urlPattern = /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(\/.*)?$/;
       if (!urlPattern.test(jiraUrl)) {
         throw new Error('Invalid Jira URL format. Please enter a valid URL.\n\nExample: https://yourcompany.atlassian.net');
       }
