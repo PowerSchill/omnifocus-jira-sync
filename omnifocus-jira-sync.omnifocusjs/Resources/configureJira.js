@@ -134,13 +134,13 @@
       }
 
       // Basic URL format validation (allow both http and https at this point)
-      // Support domain names, localhost, and IP addresses for testing
+      // Support domain names, localhost, IP addresses, and single-word hostnames for testing
       // IP validation ensures each octet is 0-255
       const ipOctet = '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)';
       const ipAddress = `${ipOctet}\\.${ipOctet}\\.${ipOctet}\\.${ipOctet}`;
-      const hostname = '[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?';
+      const hostname = '[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9]|[a-zA-Z0-9])?';
       const domain = `${hostname}(\\.${hostname})*\\.[a-zA-Z]{2,}`;
-      const urlPattern = new RegExp(`^https?:\\/\\/(localhost|${ipAddress}|${domain})(:\\d+)?(\\/.*)?$`);
+      const urlPattern = new RegExp(`^https?:\\/\\/(localhost|${ipAddress}|${domain}|${hostname})(:\\d+)?(\\/.*)?$`);
       if (!urlPattern.test(jiraUrl)) {
         throw new Error('Invalid Jira URL format. Please enter a valid URL.\n\nExample: https://yourcompany.atlassian.net');
       }
