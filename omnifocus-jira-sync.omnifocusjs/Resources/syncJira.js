@@ -61,7 +61,7 @@
             }
           }
         } else if (!shouldSkipCreation) {
-          lib.createTaskFromJiraIssue(issue, jiraUrl, tagName, settings, projectIndex);
+          lib.createTaskFromJiraIssue(issue, jiraUrl, tagName, settings, projectIndex, taskIndex);
           stats.created++;
         } else {
           stats.skipped++;

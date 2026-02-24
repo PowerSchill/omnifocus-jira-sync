@@ -560,6 +560,25 @@
     return index.get(jiraKey) || null;
   };
 
+  // Find parent container (Task or Project) for a subtask using pre-built indexes.
+  // Prefers an existing Task (creates a task group) over an existing Project.
+  // Returns null if neither is found — callers should create a flat task in that case.
+  jiraCommon.findParentContainer = (taskIndex, projectIndex, parentKey) => {
+    if (taskIndex) {
+      const parentTask = jiraCommon.findTaskByJiraKeyIndexed(taskIndex, parentKey);
+      if (parentTask) {
+        return parentTask;
+      }
+    }
+    if (projectIndex) {
+      const parentProject = jiraCommon.findProjectByJiraKeyIndexed(projectIndex, parentKey);
+      if (parentProject) {
+        return parentProject;
+      }
+    }
+    return null;
+  };
+
   // Find nested folder by path (supports "Parent:Child" notation)
   jiraCommon.findNestedFolder = (folderPath) => {
     if (!folderPath) return null;
@@ -627,30 +646,23 @@
   };
 
   // Create task from Jira issue
-  jiraCommon.createTaskFromJiraIssue = (issue, jiraUrl, tagName, settings = {}, projectIndex = null) => {
+  jiraCommon.createTaskFromJiraIssue = (issue, jiraUrl, tagName, settings = {}, projectIndex = null, taskIndex = null) => {
     const jiraKey = issue.key;
     const fields = issue.fields;
     const taskName = `[${jiraKey}] ${fields.summary}`;
 
-    // Determine project assignment
-    let project = null;
+    // Determine parent container (existing Task or Project — no auto-creation)
+    let parent = null;
     if (settings.enableProjectOrganization && fields.parent) {
       const parentKey = fields.parent.key;
-      const parentSummary = fields.parent.fields && fields.parent.fields.summary
-        ? fields.parent.fields.summary
-        : parentKey;
-
-      project = jiraCommon.findOrCreateProject(
-        parentKey,
-        parentSummary,
-        tagName,
-        settings.defaultProjectFolder,
-        projectIndex
-      );
+      parent = jiraCommon.findParentContainer(taskIndex, projectIndex, parentKey);
+      if (!parent) {
+        console.log(`Parent ${parentKey} not found in OmniFocus; creating ${jiraKey} as flat task`);
+      }
     }
 
-    // Create task in project or at root
-    const task = project ? new Task(taskName, project) : new Task(taskName);
+    // Create task under parent container or at root
+    const task = parent ? new Task(taskName, parent) : new Task(taskName);
 
     if (fields.duedate) {
       try {
