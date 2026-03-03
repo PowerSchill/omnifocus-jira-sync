@@ -780,8 +780,8 @@
     return updated;
   };
 
-  // Test connection
-  jiraCommon.testConnection = async (jiraUrl, accountId, apiToken, jqlQuery) => {
+  // Test authentication only (verifies credentials via /myself endpoint)
+  jiraCommon.testAuthentication = async (jiraUrl, accountId, apiToken) => {
     const baseUrl = jiraUrl.replace(/\/$/, '');
     const auth = jiraCommon.base64Encode(`${accountId}:${apiToken}`);
     const headers = {
@@ -790,7 +790,6 @@
       'Content-Type': 'application/json'
     };
 
-    // Step 1: Verify credentials using /myself endpoint (always requires auth)
     const myselfUrl = `${baseUrl}/rest/api/${jiraCommon.JIRA_API_VERSION}/myself`;
     const myselfRequest = URL.FetchRequest.fromString(myselfUrl);
     myselfRequest.method = 'GET';
@@ -801,7 +800,19 @@
     const myselfData = JSON.parse(myselfResponse.bodyString);
     console.log(`Authenticated as: ${myselfData.displayName}`);
 
-    // Step 2: Verify JQL query
+    return { displayName: myselfData.displayName };
+  };
+
+  // Validate JQL query (tests the query against Jira search API)
+  jiraCommon.validateJql = async (jiraUrl, accountId, apiToken, jqlQuery) => {
+    const baseUrl = jiraUrl.replace(/\/$/, '');
+    const auth = jiraCommon.base64Encode(`${accountId}:${apiToken}`);
+    const headers = {
+      'Authorization': `Basic ${auth}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    };
+
     const searchUrl = `${baseUrl}/rest/api/${jiraCommon.JIRA_API_VERSION}/search/jql`;
     const params = {
       jql: jqlQuery,
@@ -817,12 +828,20 @@
     request.allowsCellularAccess = true;
 
     const response = await jiraCommon.fetchWithRetry(request);
-
     const data = JSON.parse(response.bodyString);
+
+    return { issueCount: data.total || 0 };
+  };
+
+  // Test connection (authentication + JQL validation)
+  jiraCommon.testConnection = async (jiraUrl, accountId, apiToken, jqlQuery) => {
+    const authResult = await jiraCommon.testAuthentication(jiraUrl, accountId, apiToken);
+    const jqlResult = await jiraCommon.validateJql(jiraUrl, accountId, apiToken, jqlQuery);
+
     return {
       success: true,
-      displayName: myselfData.displayName,
-      issueCount: data.total || 0
+      displayName: authResult.displayName,
+      issueCount: jqlResult.issueCount
     };
   };
 

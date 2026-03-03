@@ -127,18 +127,50 @@
       // Normalize URL (remove trailing slash)
       const normalizedUrl = jiraUrl.replace(/\/$/, '');
 
-      // Test connection before saving
+      // Step 1: Test authentication
       console.log('Testing Jira connection...');
-      const testResult = await lib.testConnection(
+      const authResult = await lib.testAuthentication(
         normalizedUrl,
         accountId,
-        apiToken,
-        jqlQuery
+        apiToken
       );
+      lib.safeLog('Authentication successful:', authResult);
 
-      lib.safeLog('Connection test successful:', testResult);
+      // Step 2: Validate JQL query
+      let jqlValid = true;
+      let jqlError = null;
+      let issueCount = 0;
+      try {
+        console.log('Validating JQL query...');
+        const jqlResult = await lib.validateJql(
+          normalizedUrl,
+          accountId,
+          apiToken,
+          jqlQuery
+        );
+        issueCount = jqlResult.issueCount;
+        lib.safeLog('JQL validation successful:', jqlResult);
+      } catch (error) {
+        jqlValid = false;
+        jqlError = error.message;
+        console.warn('JQL validation failed:', error.message);
+      }
 
-      // Connection successful, save credentials and settings
+      // If JQL is invalid, ask user if they want to save anyway
+      if (!jqlValid) {
+        const warningAlert = new Alert(
+          'JQL Query Warning',
+          `Your JQL query could not be validated:\n\n${jqlError}\n\nWould you like to save the configuration anyway? You can fix the JQL query later.`
+        );
+        warningAlert.addOption('Save Anyway');
+        warningAlert.addOption('Cancel');
+        const choice = await warningAlert.show();
+        if (choice === 1) {
+          return;
+        }
+      }
+
+      // Save credentials and settings
       lib.saveCredentials(accountId, apiToken);
 
       const newSettings = {
@@ -154,7 +186,12 @@
 
       lib.saveSettings(newSettings);
 
-      const successMessage = `JIRA sync settings have been saved successfully.\n\nAuthenticated as: ${testResult.displayName}\nConnection test passed: Found ${testResult.issueCount} issue(s) matching your JQL query.`;
+      let successMessage;
+      if (jqlValid) {
+        successMessage = `JIRA sync settings have been saved successfully.\n\nAuthenticated as: ${authResult.displayName}\nConnection test passed: Found ${issueCount} issue(s) matching your JQL query.`;
+      } else {
+        successMessage = `JIRA sync settings have been saved with warnings.\n\nAuthenticated as: ${authResult.displayName}\n\nWarning: Your JQL query could not be validated. Please check the query before syncing.`;
+      }
       new Alert('Configuration Saved', successMessage).show();
       console.log('JIRA sync configuration saved');
 
