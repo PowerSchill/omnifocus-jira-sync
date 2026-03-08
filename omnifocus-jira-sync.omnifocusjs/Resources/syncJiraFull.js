@@ -1,6 +1,7 @@
 /* global PlugIn Alert Task tagNamed */
 (() => {
-  /**
+  /** @type {PlugIn.Action} */
+  const action = new PlugIn.Action(/**
    * OmniFocus action that performs a full refresh sync from Jira to OmniFocus.
    * Fetches all issues matching the configured JQL query (ignoring lastSyncTime),
    * creates/updates tasks, and additionally marks complete any OmniFocus tasks tagged
@@ -11,7 +12,7 @@
    * @param {*} sender - The action sender (unused)
    * @returns {Promise<void>}
    */
-  const action = new PlugIn.Action(async function(selection, sender) {
+  async function(selection, sender) {
     try {
       const lib = this.jiraCommon;
 

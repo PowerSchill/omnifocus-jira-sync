@@ -1,6 +1,7 @@
 /* global PlugIn Form Alert */
 (() => {
-  /**
+  /** @type {PlugIn.Action} */
+  const action = new PlugIn.Action(/**
    * OmniFocus action that presents a configuration form for JIRA sync settings.
    * Collects the Jira URL, account credentials, JQL query, OmniFocus tag, and optional
    * project organization settings. Validates the URL format and tag name, tests
@@ -10,7 +11,7 @@
    * @param {*} sender - The action sender (unused)
    * @returns {Promise<void>}
    */
-  const action = new PlugIn.Action(async function(selection, sender) {
+  async function(selection, sender) {
     try {
       const lib = this.jiraCommon;
       const currentSettings = lib.getSettings() || {};

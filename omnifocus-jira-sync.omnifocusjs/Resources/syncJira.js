@@ -1,6 +1,7 @@
 /* global PlugIn Alert Task */
 (() => {
-  /**
+  /** @type {PlugIn.Action} */
+  const action = new PlugIn.Action(/**
    * OmniFocus action that performs an incremental sync from Jira to OmniFocus.
    * Fetches only issues modified since the last successful sync by appending a date
    * filter to the configured JQL query. Creates new tasks, updates existing ones,
@@ -10,7 +11,7 @@
    * @param {*} sender - The action sender (unused)
    * @returns {Promise<void>}
    */
-  const action = new PlugIn.Action(async function(selection, sender) {
+  async function(selection, sender) {
     try {
       const lib = this.jiraCommon;
 
