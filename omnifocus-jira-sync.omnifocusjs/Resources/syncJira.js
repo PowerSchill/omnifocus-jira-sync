@@ -1,5 +1,15 @@
 /* global PlugIn Alert Task */
 (() => {
+  /**
+   * OmniFocus action that performs an incremental sync from Jira to OmniFocus.
+   * Fetches only issues modified since the last successful sync by appending a date
+   * filter to the configured JQL query. Creates new tasks, updates existing ones,
+   * reopens tasks whose Jira status is no longer terminal, and marks others as complete.
+   * Updates `lastSyncTime` in settings on success.
+   * @param {Selection} selection - The current OmniFocus selection (unused)
+   * @param {*} sender - The action sender (unused)
+   * @returns {Promise<void>}
+   */
   const action = new PlugIn.Action(async function(selection, sender) {
     try {
       const lib = this.jiraCommon;
@@ -81,6 +91,13 @@
     }
   });
 
+  /**
+   * Determines whether the Sync Jira action is available.
+   * Always returns true so the action can be invoked from any context.
+   * @param {Selection} selection - The current OmniFocus selection
+   * @param {*} sender - The action sender
+   * @returns {boolean} Always true
+   */
   action.validate = function(selection, sender) {
     return true;
   };

@@ -1,5 +1,16 @@
 /* global PlugIn Alert Task tagNamed */
 (() => {
+  /**
+   * OmniFocus action that performs a full refresh sync from Jira to OmniFocus.
+   * Fetches all issues matching the configured JQL query (ignoring lastSyncTime),
+   * creates/updates tasks, and additionally marks complete any OmniFocus tasks tagged
+   * with the sync tag whose Jira keys are no longer present in the results.
+   * This cleanup step removes stale tasks that have moved out of the JQL scope.
+   * Updates `lastSyncTime` in settings on success.
+   * @param {Selection} selection - The current OmniFocus selection (unused)
+   * @param {*} sender - The action sender (unused)
+   * @returns {Promise<void>}
+   */
   const action = new PlugIn.Action(async function(selection, sender) {
     try {
       const lib = this.jiraCommon;
@@ -112,6 +123,13 @@
     }
   });
 
+  /**
+   * Determines whether the Sync Jira Full action is available.
+   * Always returns true so the action can be invoked from any context.
+   * @param {Selection} selection - The current OmniFocus selection
+   * @param {*} sender - The action sender
+   * @returns {boolean} Always true
+   */
   action.validate = function(selection, sender) {
     return true;
   };

@@ -1,5 +1,15 @@
 /* global PlugIn Form Alert */
 (() => {
+  /**
+   * OmniFocus action that presents a configuration form for JIRA sync settings.
+   * Collects the Jira URL, account credentials, JQL query, OmniFocus tag, and optional
+   * project organization settings. Validates the URL format and tag name, tests
+   * authentication against the Jira API, validates the JQL query, and persists the
+   * settings and credentials on success. Prompts the user before saving if JQL validation fails.
+   * @param {Selection} selection - The current OmniFocus selection (unused)
+   * @param {*} sender - The action sender (unused)
+   * @returns {Promise<void>}
+   */
   const action = new PlugIn.Action(async function(selection, sender) {
     try {
       const lib = this.jiraCommon;
@@ -203,6 +213,13 @@
     }
   });
 
+  /**
+   * Determines whether the Configure JIRA Sync action is available.
+   * Always returns true so the action can be invoked from any context.
+   * @param {Selection} selection - The current OmniFocus selection
+   * @param {*} sender - The action sender
+   * @returns {boolean} Always true
+   */
   action.validate = function(selection, sender) {
     return true;
   };

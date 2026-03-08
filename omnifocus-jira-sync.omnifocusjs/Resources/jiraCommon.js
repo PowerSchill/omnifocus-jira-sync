@@ -31,9 +31,12 @@
   const preferences = new Preferences();
   const credentials = new Credentials();
 
-  // Safe logging function to prevent credential leakage
-  // Usage: jiraCommon.safeLog('Message', object) or jiraCommon.safeLog('Message')
-  // Automatically redacts sensitive fields like passwords, tokens, emails, etc.
+  /**
+   * Logs a message to the console while automatically redacting sensitive fields
+   * to prevent credential leakage in log output.
+   * @param {string} message - The message to log
+   * @param {*} [obj] - Optional object to log alongside the message (sensitive fields will be redacted)
+   */
   jiraCommon.safeLog = (message, obj) => {
     if (obj === undefined) {
       console.log(message);
@@ -60,7 +63,11 @@
       'nextPageToken', 'pageToken', 'emailAddress', 'email'
     ];
 
-    // Recursively sanitize the object
+    /**
+     * Recursively redacts values of sensitive keys within an object (mutates in place).
+     * @param {Object} obj - The object to sanitize
+     * @returns {Object} The sanitized object
+     */
     function sanitizeObject(obj) {
       if (typeof obj !== 'object' || obj === null) {
         return obj;
@@ -90,7 +97,13 @@
     console.log(message, JSON.stringify(sanitized));
   };
 
-  // Base64 encoding function
+  /**
+   * Encodes a string to Base64 format.
+   * Provided as a custom implementation because `btoa()` is not available in the
+   * OmniFocus JavaScript environment.
+   * @param {string} str - The string to encode
+   * @returns {string} The Base64-encoded string
+   */
   jiraCommon.base64Encode = (str) => {
     const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     let result = '';
@@ -112,8 +125,20 @@
     return result;
   };
 
-  // Fetch with retry and exponential backoff
+  /**
+   * Executes an HTTP request with automatic retry logic and exponential backoff.
+   * Retries on transient errors (rate limiting, server errors) and respects
+   * `Retry-After` headers for 429 responses. Non-retryable errors (4xx) are thrown immediately.
+   * @param {URL.FetchRequest} request - The configured fetch request to execute
+   * @returns {Promise<URL.FetchResponse>} The successful HTTP response (status 200)
+   * @throws {Error} If the request fails after all retry attempts or returns a non-retryable error
+   */
   jiraCommon.fetchWithRetry = async (request) => {
+    /**
+     * Returns a promise that resolves after the given number of milliseconds.
+     * @param {number} ms - Milliseconds to wait
+     * @returns {Promise<void>}
+     */
     const delay = (ms) => new Promise(resolve => Timer.once(ms / 1000, resolve));
 
     let lastError = null;
@@ -179,7 +204,13 @@
     throw lastError || new Error('Request failed after retries');
   };
 
-  // Create actionable error message
+  /**
+   * Creates a human-readable, actionable error message from a Jira API HTTP error response.
+   * Attempts to extract Jira-specific error details from the response body.
+   * @param {number} statusCode - The HTTP status code returned by Jira
+   * @param {string} responseBody - The raw response body string (may contain JSON error details)
+   * @returns {string} A descriptive error message with guidance on how to resolve the issue
+   */
   jiraCommon.createJiraErrorMessage = (statusCode, responseBody) => {
     let errorMessage = '';
     let jiraErrorDetails = '';
@@ -223,7 +254,14 @@
     return errorMessage;
   };
 
-  // Get effective status mappings (settings override defaults)
+  /**
+   * Returns the effective Jira→OmniFocus status mappings, using user-configured values when
+   * available and falling back to the built-in defaults otherwise.
+   * @param {Object} settings - The current plugin settings object
+   * @param {string[]} [settings.completedStatuses] - Custom list of Jira statuses that map to Completed
+   * @param {string[]} [settings.droppedStatuses] - Custom list of Jira statuses that map to Dropped
+   * @returns {{ completed: string[], dropped: string[] }} The effective status mapping arrays
+   */
   jiraCommon.getStatusMappings = (settings) => {
     const completed = (settings && Array.isArray(settings.completedStatuses) && settings.completedStatuses.length > 0)
       ? settings.completedStatuses
@@ -234,7 +272,10 @@
     return { completed, dropped };
   };
 
-  // Settings management
+  /**
+   * Reads and deserializes plugin settings from the OmniFocus Preferences API.
+   * @returns {Object|null} The parsed settings object, or null if not yet configured or on parse error
+   */
   jiraCommon.getSettings = () => {
     const settingsString = preferences.read(jiraCommon.SETTINGS_KEY);
     if (settingsString) {
@@ -248,11 +289,18 @@
     return null;
   };
 
+  /**
+   * Serializes and persists plugin settings to the OmniFocus Preferences API.
+   * @param {Object} settings - The settings object to save
+   */
   jiraCommon.saveSettings = (settings) => {
     preferences.write(jiraCommon.SETTINGS_KEY, JSON.stringify(settings));
   };
 
-  // Credentials management
+  /**
+   * Retrieves Jira credentials from the OmniFocus secure Credentials API (system keychain).
+   * @returns {{ accountId: string, apiToken: string }|null} The stored credentials, or null if not found
+   */
   jiraCommon.getCredentials = () => {
     const credential = credentials.read(jiraCommon.CREDENTIAL_SERVICE);
     if (credential) {
@@ -264,12 +312,31 @@
     return null;
   };
 
+  /**
+   * Saves Jira credentials to the OmniFocus secure Credentials API (system keychain).
+   * Any previously stored credentials for this service are replaced before writing.
+   * @param {string} accountId - The Jira account ID (stored as username)
+   * @param {string} apiToken - The Jira API token (stored as password)
+   */
   jiraCommon.saveCredentials = (accountId, apiToken) => {
     credentials.remove(jiraCommon.CREDENTIAL_SERVICE);
     credentials.write(jiraCommon.CREDENTIAL_SERVICE, accountId, apiToken);
   };
 
-  // Fetch issues from Jira
+  /**
+   * Fetches all Jira issues matching the given JQL query, handling token-based pagination automatically.
+   * For incremental syncs, appends an `updated >=` clause to the JQL to limit results to recently
+   * modified issues.
+   * @param {string} jiraUrl - The base Jira instance URL (e.g., https://yourcompany.atlassian.net)
+   * @param {string} accountId - The Jira account ID for Basic Auth
+   * @param {string} apiToken - The Jira API token for Basic Auth
+   * @param {string} jql - The base JQL query string
+   * @param {boolean} [fullRefresh=false] - If true, fetches all matching issues ignoring lastSyncTime
+   * @param {string|null} [lastSyncTime=null] - ISO timestamp of the last successful sync;
+   *   appended to JQL as a date filter when fullRefresh is false
+   * @returns {Promise<Object[]>} Array of Jira issue objects from the API response
+   * @throws {Error} If the API request fails or the Jira server returns an error response
+   */
   jiraCommon.fetchJiraIssues = async (jiraUrl, accountId, apiToken, jql, fullRefresh = false, lastSyncTime = null) => {
     const baseUrl = jiraUrl.replace(/\/$/, '');
     let finalJql = jql;
@@ -333,7 +400,14 @@
     return allIssues;
   };
 
-  // Convert ADF to Markdown
+  /**
+   * Converts an Atlassian Document Format (ADF) document object to a Markdown string.
+   * Supports paragraphs, headings (h1–h6), ordered/unordered lists (with nesting),
+   * code blocks, inline code, bold, italic, strikethrough, underline, links, blockquotes,
+   * hard breaks, horizontal rules, mentions, emoji, and inline/single media cards.
+   * @param {Object} adf - The ADF document object as returned by the Jira API `description` field
+   * @returns {string} Markdown string representation, or an empty string if the input is invalid
+   */
   jiraCommon.convertAdfToMarkdown = (adf) => {
     if (!adf || typeof adf !== 'object') {
       return '';
@@ -341,6 +415,15 @@
 
     let markdown = '';
 
+    /**
+     * Recursively converts a single ADF node and its children to a Markdown string.
+     * @param {Object} node - The ADF node object to convert
+     * @param {Object} [context={}] - Context inherited from parent nodes
+     * @param {'bullet'|'ordered'} [context.listType] - Set by parent list nodes to determine bullet style
+     * @param {number} [context.listDepth] - Nesting depth for indentation of list items
+     * @param {number} [context.listIndex] - 1-based position of the current ordered list item
+     * @returns {string} Markdown string for this node and all its descendants
+     */
     function convertNode(node, context = {}) {
       if (!node) return '';
 
@@ -508,25 +591,43 @@
     return markdown.trim();
   };
 
-  // Backward compatibility alias (maintained indefinitely)
-  // The function now returns Markdown instead of plain text
+  /**
+   * Alias for {@link convertAdfToMarkdown}, maintained for backwards compatibility.
+   * @deprecated Use `convertAdfToMarkdown` instead. This alias will be kept indefinitely.
+   * @type {typeof jiraCommon.convertAdfToMarkdown}
+   */
   jiraCommon.convertAdfToPlainText = jiraCommon.convertAdfToMarkdown;
 
-  // Find task by Jira key (linear scan)
+  /**
+   * Searches all OmniFocus tasks for one whose name begins with the given Jira key prefix.
+   * Performs a linear scan — prefer {@link findTaskByJiraKeyIndexed} when processing many issues.
+   * @param {string} jiraKey - The Jira issue key (e.g., 'PROJ-123')
+   * @returns {Task|null} The first matching OmniFocus Task, or null if not found
+   */
   jiraCommon.findTaskByJiraKey = (jiraKey) => {
     const prefix = `[${jiraKey}]`;
     const tasks = flattenedTasks.filter(task => task.name.startsWith(prefix));
     return tasks.length > 0 ? tasks[0] : null;
   };
 
-  // Find project by Jira key (linear scan)
+  /**
+   * Searches all OmniFocus projects for one whose name begins with the given Jira key prefix.
+   * Performs a linear scan — prefer {@link findProjectByJiraKeyIndexed} when processing many issues.
+   * @param {string} jiraKey - The Jira issue key (e.g., 'PROJ-123')
+   * @returns {Project|null} The first matching OmniFocus Project, or null if not found
+   */
   jiraCommon.findProjectByJiraKey = (jiraKey) => {
     const prefix = `[${jiraKey}]`;
     const projects = flattenedProjects.filter(project => project.name.startsWith(prefix));
     return projects.length > 0 ? projects[0] : null;
   };
 
-  // Build a Map<string, Task> index from flattenedTasks for O(1) lookups
+  /**
+   * Builds a `Map<jiraKey, Task>` index from all OmniFocus tasks for O(1) lookups.
+   * Call this once before processing a batch of issues, then use
+   * {@link findTaskByJiraKeyIndexed} to look up tasks without rescanning.
+   * @returns {Map<string, Task>} Map where each key is a Jira issue key (e.g., 'PROJ-123')
+   */
   jiraCommon.buildTaskIndex = () => {
     const index = new Map();
     for (const task of flattenedTasks) {
@@ -538,7 +639,12 @@
     return index;
   };
 
-  // Build a Map<string, Project> index from flattenedProjects for O(1) lookups
+  /**
+   * Builds a `Map<jiraKey, Project>` index from all OmniFocus projects for O(1) lookups.
+   * Call this once before processing a batch of issues, then use
+   * {@link findProjectByJiraKeyIndexed} to look up projects without rescanning.
+   * @returns {Map<string, Project>} Map where each key is a Jira issue key (e.g., 'PROJ-123')
+   */
   jiraCommon.buildProjectIndex = () => {
     const index = new Map();
     for (const project of flattenedProjects) {
@@ -550,19 +656,35 @@
     return index;
   };
 
-  // Find task by Jira key using pre-built index
+  /**
+   * Looks up an OmniFocus Task by Jira key using a pre-built index for O(1) performance.
+   * @param {Map<string, Task>} index - Task index created by {@link buildTaskIndex}
+   * @param {string} jiraKey - The Jira issue key to look up (e.g., 'PROJ-123')
+   * @returns {Task|null} The matching OmniFocus Task, or null if not found
+   */
   jiraCommon.findTaskByJiraKeyIndexed = (index, jiraKey) => {
     return index.get(jiraKey) || null;
   };
 
-  // Find project by Jira key using pre-built index
+  /**
+   * Looks up an OmniFocus Project by Jira key using a pre-built index for O(1) performance.
+   * @param {Map<string, Project>} index - Project index created by {@link buildProjectIndex}
+   * @param {string} jiraKey - The Jira issue key to look up (e.g., 'PROJ-123')
+   * @returns {Project|null} The matching OmniFocus Project, or null if not found
+   */
   jiraCommon.findProjectByJiraKeyIndexed = (index, jiraKey) => {
     return index.get(jiraKey) || null;
   };
 
-  // Find parent container (Task or Project) for a subtask using pre-built indexes.
-  // Prefers an existing Task (creates a task group) over an existing Project.
-  // Returns null if neither is found — callers should create a flat task in that case.
+  /**
+   * Resolves the parent container for a Jira sub-task using pre-built indexes.
+   * Prefers an existing OmniFocus Task (which will become a task group) over a Project.
+   * Returns null when neither exists — callers should then create a flat top-level task.
+   * @param {Map<string, Task>|null} taskIndex - Task index created by {@link buildTaskIndex}
+   * @param {Map<string, Project>|null} projectIndex - Project index created by {@link buildProjectIndex}
+   * @param {string} parentKey - The Jira key of the parent issue (e.g., 'PROJ-100')
+   * @returns {Task|Project|null} The parent Task or Project, or null if neither exists in OmniFocus
+   */
   jiraCommon.findParentContainer = (taskIndex, projectIndex, parentKey) => {
     if (taskIndex) {
       const parentTask = jiraCommon.findTaskByJiraKeyIndexed(taskIndex, parentKey);
@@ -579,7 +701,13 @@
     return null;
   };
 
-  // Find nested folder by path (supports "Parent:Child" notation)
+  /**
+   * Resolves an OmniFocus Folder by a colon-delimited path string.
+   * Each segment is treated as a child folder of the previous one
+   * (e.g., `"Work:Projects:JIRA"` navigates three levels deep).
+   * @param {string} folderPath - Colon-delimited folder path (e.g., `'Work'` or `'Work:Projects'`)
+   * @returns {Folder|null} The resolved OmniFocus Folder, or null if any path segment is not found
+   */
   jiraCommon.findNestedFolder = (folderPath) => {
     if (!folderPath) return null;
 
@@ -607,7 +735,17 @@
     return currentFolder;
   };
 
-  // Find or create project for parent issue
+  /**
+   * Finds an existing OmniFocus Project for a Jira parent issue, or creates one if none exists.
+   * New projects are placed in the specified folder; if the folder cannot be found they are
+   * created at root level.
+   * @param {string} parentKey - The Jira key of the parent issue (e.g., 'PROJ-100')
+   * @param {string} parentSummary - The summary/title of the parent Jira issue
+   * @param {string} tagName - The OmniFocus tag name to assign to newly created projects
+   * @param {string} defaultFolder - Colon-delimited OmniFocus folder path for new projects (may be empty)
+   * @param {Map<string, Project>|null} [projectIndex=null] - Optional pre-built project index for O(1) lookup
+   * @returns {Project} The found or newly created OmniFocus Project
+   */
   jiraCommon.findOrCreateProject = (parentKey, parentSummary, tagName, defaultFolder, projectIndex = null) => {
     // Try to find existing project using index if available, otherwise linear scan
     let project = projectIndex
@@ -645,7 +783,19 @@
     return project;
   };
 
-  // Create task from Jira issue
+  /**
+   * Creates a new OmniFocus Task from a Jira issue object.
+   * Sets the task name, due date, notes (Jira URL + status + converted ADF description), and tag.
+   * When project organization is enabled and the issue has a parent that already exists in
+   * OmniFocus, the task is created as a child of that parent container.
+   * @param {Object} issue - A Jira issue object as returned by the Jira search API
+   * @param {string} jiraUrl - The base Jira instance URL
+   * @param {string} tagName - The OmniFocus tag name to assign to the task
+   * @param {Object} [settings={}] - Plugin settings (used for project organization configuration)
+   * @param {Map<string, Project>|null} [projectIndex=null] - Pre-built project index for parent lookup
+   * @param {Map<string, Task>|null} [taskIndex=null] - Pre-built task index for parent lookup
+   * @returns {Task} The newly created OmniFocus Task
+   */
   jiraCommon.createTaskFromJiraIssue = (issue, jiraUrl, tagName, settings = {}, projectIndex = null, taskIndex = null) => {
     const jiraKey = issue.key;
     const fields = issue.fields;
@@ -683,7 +833,19 @@
     return task;
   };
 
-  // Update task from Jira issue
+  /**
+   * Updates an existing OmniFocus Task with the latest data from a Jira issue.
+   * Applies changes to the task name, due date, notes, project assignment (when organization
+   * is enabled), and completion/dropped status based on the current Jira status.
+   * Tasks are reopened (marked incomplete) if their Jira status is no longer terminal.
+   * @param {Task} task - The existing OmniFocus Task to update
+   * @param {Object} issue - The Jira issue object with current field values
+   * @param {string} jiraUrl - The base Jira instance URL
+   * @param {string} tagName - The OmniFocus tag name (used when creating parent projects)
+   * @param {Object} [settings={}] - Plugin settings (used for status mappings and project organization)
+   * @param {Map<string, Project>|null} [projectIndex=null] - Pre-built project index for parent lookup
+   * @returns {boolean} True if any field was changed, false if the task was already up to date
+   */
   jiraCommon.updateTaskFromJiraIssue = (task, issue, jiraUrl, tagName, settings = {}, projectIndex = null) => {
     const jiraKey = issue.key;
     const fields = issue.fields;
@@ -780,7 +942,14 @@
     return updated;
   };
 
-  // Test authentication only (verifies credentials via /myself endpoint)
+  /**
+   * Verifies Jira credentials by calling the `/rest/api/3/myself` endpoint.
+   * @param {string} jiraUrl - The base Jira instance URL
+   * @param {string} accountId - The Jira account ID for Basic Auth
+   * @param {string} apiToken - The Jira API token for Basic Auth
+   * @returns {Promise<{ displayName: string }>} Object containing the authenticated user's display name
+   * @throws {Error} If authentication fails or the network request errors
+   */
   jiraCommon.testAuthentication = async (jiraUrl, accountId, apiToken) => {
     const baseUrl = jiraUrl.replace(/\/$/, '');
     const auth = jiraCommon.base64Encode(`${accountId}:${apiToken}`);
@@ -803,7 +972,16 @@
     return { displayName: myselfData.displayName };
   };
 
-  // Validate JQL query (tests the query against Jira search API)
+  /**
+   * Validates a JQL query by executing it against the Jira search API with `maxResults=1`.
+   * Returns the total matching issue count if the query is syntactically and semantically valid.
+   * @param {string} jiraUrl - The base Jira instance URL
+   * @param {string} accountId - The Jira account ID for Basic Auth
+   * @param {string} apiToken - The Jira API token for Basic Auth
+   * @param {string} jqlQuery - The JQL query string to validate
+   * @returns {Promise<{ issueCount: number }>} Object containing the total number of matching issues
+   * @throws {Error} If the JQL query is invalid or the API request fails
+   */
   jiraCommon.validateJql = async (jiraUrl, accountId, apiToken, jqlQuery) => {
     const baseUrl = jiraUrl.replace(/\/$/, '');
     const auth = jiraCommon.base64Encode(`${accountId}:${apiToken}`);
@@ -833,7 +1011,16 @@
     return { issueCount: data.total || 0 };
   };
 
-  // Test connection (authentication + JQL validation)
+  /**
+   * Performs a full connection test combining credential verification and JQL validation.
+   * Calls {@link testAuthentication} followed by {@link validateJql} and merges the results.
+   * @param {string} jiraUrl - The base Jira instance URL
+   * @param {string} accountId - The Jira account ID for Basic Auth
+   * @param {string} apiToken - The Jira API token for Basic Auth
+   * @param {string} jqlQuery - The JQL query to validate
+   * @returns {Promise<{ success: boolean, displayName: string, issueCount: number }>} Combined test result
+   * @throws {Error} If authentication fails or the JQL query is invalid
+   */
   jiraCommon.testConnection = async (jiraUrl, accountId, apiToken, jqlQuery) => {
     const authResult = await jiraCommon.testAuthentication(jiraUrl, accountId, apiToken);
     const jqlResult = await jiraCommon.validateJql(jiraUrl, accountId, apiToken, jqlQuery);
