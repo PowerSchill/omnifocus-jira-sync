@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/PowerSchill/omnifocus-jira-sync/compare/omnifocus-jira-sync-v1.2.0...omnifocus-jira-sync-v1.3.0) (2026-03-15)
+
+
+### Features
+
+* convert ADF to Markdown instead of plain text ([#71](https://github.com/PowerSchill/omnifocus-jira-sync/issues/71)) ([9d4b94b](https://github.com/PowerSchill/omnifocus-jira-sync/commit/9d4b94bda7c1bee637975bb3c4542001b3b03b9c))
+* display last sync time in completion alerts ([#82](https://github.com/PowerSchill/omnifocus-jira-sync/issues/82)) ([ed11619](https://github.com/PowerSchill/omnifocus-jira-sync/commit/ed11619187745dd4fcc6c456e77d580753d7f97e)), closes [#22](https://github.com/PowerSchill/omnifocus-jira-sync/issues/22)
+* validate JQL syntax during configuration ([#78](https://github.com/PowerSchill/omnifocus-jira-sync/issues/78)) ([e4a5a57](https://github.com/PowerSchill/omnifocus-jira-sync/commit/e4a5a57aebc5aad6ff5fe90c947780f3c74a4b69)), closes [#16](https://github.com/PowerSchill/omnifocus-jira-sync/issues/16)
+
+
+### Bug Fixes
+
+* create subtasks as task groups instead of phantom projects ([#76](https://github.com/PowerSchill/omnifocus-jira-sync/issues/76)) ([6ae13e4](https://github.com/PowerSchill/omnifocus-jira-sync/commit/6ae13e467d99674357421e01af9ee2334bcf85d4))
+
 ## [1.2.0](https://github.com/PowerSchill/omnifocus-jira-sync/compare/omnifocus-jira-sync-v1.1.0...omnifocus-jira-sync-v1.2.0) (2026-02-11)
 
 
