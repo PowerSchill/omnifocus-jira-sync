@@ -102,7 +102,8 @@
       const newSyncTime = new Date().toISOString();
       lib.saveSettings({ ...settings, lastSyncTime: newSyncTime });
 
-      const message = `Full sync completed successfully!\n\nCreated: ${stats.created}\nUpdated: ${stats.updated}\nReopened: ${stats.reopened}\nCompleted: ${stats.completed}\nSkipped: ${stats.skipped}`;
+      const previousSync = lastSyncTime ? `Previous sync: ${lib.formatSyncTime(lastSyncTime)}\n` : '';
+      const message = `Full sync completed successfully!\n\n${previousSync}Current sync: ${lib.formatSyncTime(newSyncTime)}\n\nCreated: ${stats.created}\nUpdated: ${stats.updated}\nReopened: ${stats.reopened}\nCompleted: ${stats.completed}\nSkipped: ${stats.skipped}`;
       console.log(message);
       new Alert('JIRA Full Sync Complete', message).show();
     } catch (error) {
