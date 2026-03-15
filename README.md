@@ -19,6 +19,12 @@ A one-way sync plugin that imports Jira issues into OmniFocus as tasks using JQL
 - **Input validation** with connection testing before saving configuration
 - **Optimized performance** with index-based O(1) task lookups
 
+## Requirements
+
+- **OmniFocus 3 Pro** or later (Pro is required for Automation/Plug-In support)
+- **macOS** (the plugin uses the macOS Keychain for credential storage)
+- **Jira Cloud** instance with API token access
+
 ## Installation
 
 1. Download or clone this repository
